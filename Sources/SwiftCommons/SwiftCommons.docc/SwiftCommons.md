@@ -10,16 +10,16 @@ SwiftCommons provides lightweight extensions and helpers around Foundation, date
 
 ### Foundation Extensions
 
-- ``Array``
-- ``Optional``
-- ``URL``
-- ``Locale``
-- ``FixedWidthInteger``
+- ``SwiftCommons/Array``
+- ``SwiftCommons/Optional``
+- ``SwiftCommons/URL``
+- ``SwiftCommons/Locale``
+- ``SwiftCommons/FixedWidthInteger``
 
 ### Dates
 
-- ``Calendar``
-- ``DateFormatter``
+- ``SwiftCommons/Calendar``
+- ``SwiftCommons/DateFormatter``
 
 ### Locales
 
@@ -28,4 +28,4 @@ SwiftCommons provides lightweight extensions and helpers around Foundation, date
 
 ### Logging
 
-- ``Logger``
+- ``SwiftCommons/Logger``
