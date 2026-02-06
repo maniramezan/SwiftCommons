@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   docs-build:
@@ -22,39 +22,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
       - name: Set up Swift
         uses: swift-actions/setup-swift@v2
         with:
           swift-version: "6.2"
 
-      - name: Build Symbol Graphs
-        run: |
-          swift build \
-            --target SwiftCommons \
-            -Xswiftc -emit-symbol-graph \
-            -Xswiftc -emit-symbol-graph-dir \
-            -Xswiftc /tmp/symbolgraphs
-
       - name: Generate DocC (Static)
         run: |
-          xcrun docc convert Sources/SwiftCommons/SwiftCommons.docc \
-            --additional-symbol-graph-dir /tmp/symbolgraphs \
-            --warnings-as-errors \
-            --analyze \
-            --transform-for-static-hosting \
-            --hosting-base-path /SwiftCommons \
-            --output-path /tmp/docc
+          bash scripts/docs/clean.sh
+          archive_path="$(bash scripts/docs/generate.sh "${{ github.event.repository.name }}")"
+          bash scripts/docs/prepare-site.sh "$archive_path"
+          bash scripts/docs/redirect-root.sh "SwiftCommons"
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
-          path: /tmp/docc
+          path: /tmp/docc-site
 
   docs-deploy:
     needs: docs-build
     runs-on: ubuntu-latest
     environment:
-      name: github-pages
+      name: github_pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages

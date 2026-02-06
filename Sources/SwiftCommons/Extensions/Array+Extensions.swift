@@ -8,8 +8,10 @@ extension Array {
     ///     print(arr[1, default: "d"]) // "b"
     ///     print(arr[3, default: "d"]) // "d"
     ///
-    /// - Parameter safe: Index of needed element.
-    /// - Returns: Element at given index if exists. Otherwise, the result of given default value..
+    /// - Parameters:
+    ///   - index: Index of needed element.
+    ///   - defaultValue: Default value to use if the index is out of bounds.
+    /// - Returns: Element at given index if exists. Otherwise, the result of given default value.
     @inlinable
     public subscript(_ index: Index, default defaultValue: @autoclosure () -> Element) -> Element {
         self[safe: index] ?? defaultValue()
@@ -21,7 +23,7 @@ extension Array {
     ///     print(arr[safe: 1]) // Optional("b")
     ///     print(arr[safe: 3]) // nil
     ///
-    /// - Parameter safe: Index of needed element.
+    /// - Parameter index: Index of needed element.
     /// - Returns: Element at given index if exists. Otherwise, nil.
     @inlinable
     public subscript(safe index: Index) -> Element? {
@@ -34,7 +36,7 @@ extension Array {
 
     /// Access a subsequence of the array with the given range. If the range is out of bounds, the missing elements will be filled with the default value.
     /// - Parameter range: Range of indices.
-    /// - Parameter default: Default value to be used if the range is out of bounds.
+    /// - Parameter defaultValue: Default value to be used if the range is out of bounds.
     /// - Returns: A subsequence of the array with the given range. If the range is out of bounds, the missing elements will be filled with the default value.
     /// - Precondition: `range.lowerBound` to be a valid index ≥ 0.
     @inlinable
@@ -58,7 +60,7 @@ extension Array {
 
     /// Access a subsequence of the array with the given range. If the range is out of bounds, the missing elements will be filled with the default value.
     /// - Parameter range: Range of indices.
-    /// - Parameter default: Default value to be used if the range is out of bounds.
+    /// - Parameter defaultValue: Default value to be used if the range is out of bounds.
     /// - Returns: A subsequence of the array with the given range. If the range is out of bounds, the missing elements will be filled with the default value.
     @inlinable
     public subscript(range: ClosedRange<Index>, default defaultValue: @autoclosure () -> Element)
