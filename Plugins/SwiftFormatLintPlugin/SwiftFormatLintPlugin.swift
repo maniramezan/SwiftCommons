@@ -12,39 +12,43 @@ struct SwiftFormatLintPlugin: BuildToolPlugin {
             return []
         }
 
-        let configPath = context.package.directory.appending(".swift-format")
-        let outputDirectory = context.pluginWorkDirectory.appending(target.name)
+        let configPath = context.package.directoryURL.appending(path: ".swift-format")
+        let outputDirectory = context.pluginWorkDirectoryURL.appending(path: target.name)
 
-        let arguments = [
-            "lint",
-            "--configuration",
-            configPath.string,
-            "--strict",
-            "--recursive",
-            target.directory.string
-        ]
+        let script = """
+        set -euo pipefail
+        cd '\(escapeShell(target.directoryURL.path(percentEncoded: false)))'
+        '\(escapeShell(swiftFormatPath.path(percentEncoded: false)))' lint \
+          --configuration '\(escapeShell(configPath.path(percentEncoded: false)))' \
+          --strict \
+          --recursive \
+          .
+        """
 
         return [
             .prebuildCommand(
                 displayName: "SwiftFormat lint (\(target.name))",
-                executable: swiftFormatPath,
-                arguments: arguments,
+                executable: URL(fileURLWithPath: "/bin/zsh"),
+                arguments: ["-lc", script],
                 outputFilesDirectory: outputDirectory)
         ]
     }
 }
 
-private func resolveExecutable(named tool: String) -> Path? {
+private func escapeShell(_ value: String) -> String {
+    value.replacingOccurrences(of: "'", with: "'\"'\"'")
+}
+
+private func resolveExecutable(named tool: String) -> URL? {
     guard let path = ProcessInfo.processInfo.environment["PATH"] else {
         return nil
     }
 
     for directory in path.split(separator: ":") {
         let candidate = URL(fileURLWithPath: String(directory))
-            .appendingPathComponent(tool)
-            .path
-        if FileManager.default.isExecutableFile(atPath: candidate) {
-            return Path(candidate)
+            .appending(path: tool)
+        if FileManager.default.isExecutableFile(atPath: candidate.path(percentEncoded: false)) {
+            return candidate
         }
     }
 

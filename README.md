@@ -1,7 +1,7 @@
 # SwiftCommons
 
 [![Swift 6.2](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
-[![CI](https://github.com/maniramezan/SwiftCommons/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/maniramezan/SwiftCommons/actions/workflows/ci.yml)
+[![Build](https://github.com/maniramezan/SwiftCommons/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/maniramezan/SwiftCommons/actions/workflows/build.yml)
 
 Shared Swift utilities and helpers for reusable app code.
 
@@ -34,7 +34,7 @@ let dateString = formatter.string(from: Date())
 
 ## Documentation
 
-DocC is included in `Sources/SwiftCommons/SwiftCommons.docc`.
+DocC is generated from symbol graphs (no custom catalog).
 
 Generate documentation locally:
 

@@ -11,6 +11,7 @@ extension Logger {
     /// - Parameters:
     ///   - subsystem: The subsystem identifier (usually package name)
     ///   - type: The type to use for category (defaults to caller's type)
+    ///   - file: The file path (automatically filled by compiler)
     /// - Returns: Configured Logger instance
     ///
     /// Usage:

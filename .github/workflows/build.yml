@@ -1,4 +1,4 @@
-name: CI
+name: Build
 
 on:
   pull_request:
@@ -6,6 +6,10 @@ on:
     branches:
       - main
   workflow_dispatch:
+
+concurrency:
+  group: "ci-${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
@@ -29,6 +33,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-spm-
 
+      - name: Swift Format Lint
+        run: |
+          if command -v swift-format >/dev/null 2>&1; then
+            SWIFT_FORMAT="$(command -v swift-format)"
+          else
+            SWIFT_FORMAT="$(xcrun --find swift-format)"
+          fi
+
+          "$SWIFT_FORMAT" lint \
+            --configuration .swift-format \
+            --strict \
+            --recursive \
+            Sources \
+            Tests
+
       - name: Build
         run: swift build
 
@@ -45,8 +64,10 @@ jobs:
 
       - name: Generate DocC
         run: |
-          xcrun docc convert Sources/SwiftCommons/SwiftCommons.docc \
+          xcrun docc convert \
             --additional-symbol-graph-dir /tmp/symbolgraphs \
+            --fallback-display-name SwiftCommons \
+            --fallback-bundle-identifier com.maniramezan.swiftcommons \
             --warnings-as-errors \
             --analyze \
             --output-path /tmp/docc
