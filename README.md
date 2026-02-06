@@ -1,5 +1,8 @@
 # SwiftCommons
 
+[![Swift 6.2](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
+[![CI](https://github.com/maniramezan/SwiftCommons/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/maniramezan/SwiftCommons/actions/workflows/ci.yml)
+
 Shared Swift utilities and helpers for reusable app code.
 
 ## Requirements
@@ -40,19 +43,3 @@ swift package generate-documentation \
   --target SwiftCommons \
   --output-path /tmp/docc
 ```
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Code of Conduct
-
-See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
-
-## Security
-
-See [SECURITY.md](SECURITY.md).
-
-## License
-
-See [LICENSE](LICENSE).
