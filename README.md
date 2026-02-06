@@ -43,3 +43,19 @@ swift package generate-documentation \
   --target SwiftCommons \
   --output-path /tmp/docc
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Code of Conduct
+
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## Security
+
+See [SECURITY.md](SECURITY.md).
+
+## License
+
+See [LICENSE](LICENSE).
