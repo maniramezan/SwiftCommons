@@ -1,23 +1,20 @@
-// swift-tools-version:5.1
-// The swift-tools-version declares the minimum version of Swift required to build this package.
+// swift-tools-version: 6.2
 
 import PackageDescription
 
 let package = Package(
-    name: "Grallistrix",
+    name: "SwiftCommons",
+    platforms: [.macOS(.v11), .iOS(.v16), .macCatalyst(.v16)],
     products: [
-        // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(
-            name: "Grallistrix",
-            targets: ["Grallistrix"])
+            name: "SwiftCommons",
+            targets: ["SwiftCommons"])
     ],
     targets: [
-        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
-        // Targets can depend on other targets in this package, and on products in packages which this package depends on.
-        .target(
-            name: "Grallistrix"),
+        .target(name: "SwiftCommons"),
         .testTarget(
-            name: "GrallistrixTests",
-            dependencies: ["Grallistrix"])
-    ]
+            name: "SwiftCommonsTests",
+            dependencies: ["SwiftCommons"]),
+    ],
+    swiftLanguageModes: [.v6]
 )

@@ -1,5 +1,6 @@
 import XCTest
-@testable import Grallistrix
+
+@testable import SwiftCommons
 
 final class ArrayExtensionsTests: XCTestCase {
     let array = [1, 2, 3, 4, 5, 6]
@@ -39,9 +40,4 @@ final class ArrayExtensionsTests: XCTestCase {
         XCTAssertEqual(array[safe: 0...3], [1, 2, 3, 4])
         XCTAssertEqual(array[0...3, default: 13], [1, 2, 3, 4])
     }
-    
-    static var allTests = [
-        ("testFallbackIndexAccess", testFallbackIndexAccess),
-        ("testSafeIndexAccess", testSafeIndexAccess),
-    ]
 }
