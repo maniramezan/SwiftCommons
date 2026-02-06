@@ -119,7 +119,9 @@ extension Logger {
     ) {
         let fileName = (file as NSString).lastPathComponent
         if let context = context {
-            self.error("\(message) | Context: \(context) | Error: \(error.localizedDescription) | \(fileName):\(line)")
+            self.error(
+                "\(message) | Context: \(context) | Error: \(error.localizedDescription) | \(fileName):\(line)"
+            )
         } else {
             self.error("\(message) | Error: \(error.localizedDescription) | \(fileName):\(line)")
         }

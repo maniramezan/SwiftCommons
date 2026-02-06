@@ -1,6 +1,5 @@
-import XCTest
-
 import DateHandyTests
+import XCTest
 
 var tests = [XCTestCaseEntry]()
 tests += FixedWidthIntegerExtensionsTests.allTests()
