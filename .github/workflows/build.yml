@@ -35,10 +35,18 @@ jobs:
       - name: Test
         run: swift test
 
+      - name: Build Symbol Graphs
+        run: |
+          swift build \
+            --target SwiftCommons \
+            -Xswiftc -emit-symbol-graph \
+            -Xswiftc -emit-symbol-graph-dir \
+            -Xswiftc /tmp/symbolgraphs
+
       - name: Generate DocC
         run: |
-          swift package generate-documentation \
-            --target SwiftCommons \
+          xcrun docc convert Sources/SwiftCommons/SwiftCommons.docc \
+            --additional-symbol-graph-dir /tmp/symbolgraphs \
             --warnings-as-errors \
             --analyze \
             --output-path /tmp/docc
