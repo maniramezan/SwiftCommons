@@ -4,7 +4,7 @@ Shared repository guidance for all agents (Codex, Claude, etc.). Keep this file 
 
 ## Project Overview
 
-SwiftCommons is a Swift Package Manager library providing Foundation extensions and utilities. It targets macOS 11+, iOS 16+, and Mac Catalyst 16+. The package uses Swift 6 language mode (`swift-tools-version: 6.2`) and has no external dependencies.
+SwiftCommons is a Swift Package Manager library providing Foundation extensions and utilities. It targets macOS 13+, iOS 16+, and Mac Catalyst 16+. The package uses Swift 6 language mode (`swift-tools-version: 6.2`) and has no external dependencies.
 
 ## Build and Test
 
