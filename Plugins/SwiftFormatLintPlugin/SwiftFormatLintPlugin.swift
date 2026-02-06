@@ -8,8 +8,7 @@ struct SwiftFormatLintPlugin: BuildToolPlugin {
             return []
         }
 
-        let xcrunPath = "/usr/bin/xcrun"
-        if !FileManager.default.isExecutableFile(atPath: xcrunPath) {
+        guard let swiftFormatPath = resolveExecutable(named: "swift-format") else {
             return []
         }
 
@@ -17,7 +16,6 @@ struct SwiftFormatLintPlugin: BuildToolPlugin {
         let outputDirectory = context.pluginWorkDirectory.appending(target.name)
 
         let arguments = [
-            "swift-format",
             "lint",
             "--configuration",
             configPath.string,
@@ -29,9 +27,26 @@ struct SwiftFormatLintPlugin: BuildToolPlugin {
         return [
             .prebuildCommand(
                 displayName: "SwiftFormat lint (\(target.name))",
-                executable: Path(xcrunPath),
+                executable: swiftFormatPath,
                 arguments: arguments,
                 outputFilesDirectory: outputDirectory)
         ]
     }
+}
+
+private func resolveExecutable(named tool: String) -> Path? {
+    guard let path = ProcessInfo.processInfo.environment["PATH"] else {
+        return nil
+    }
+
+    for directory in path.split(separator: ":") {
+        let candidate = URL(fileURLWithPath: String(directory))
+            .appendingPathComponent(tool)
+            .path
+        if FileManager.default.isExecutableFile(atPath: candidate) {
+            return Path(candidate)
+        }
+    }
+
+    return nil
 }

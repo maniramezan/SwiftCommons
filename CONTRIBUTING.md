@@ -4,8 +4,7 @@ Thanks for contributing! This repository aims to keep changes minimal and focuse
 
 ## Requirements
 
-- Swift 6.2 toolchain
-- Xcode Command Line Tools (for `xcrun swift-format`)
+- Swift 6.2 toolchain (includes `swift-format` on PATH)
 
 ## Build and Test
 
