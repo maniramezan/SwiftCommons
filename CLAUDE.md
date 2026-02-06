@@ -21,6 +21,9 @@ swift build -v
 
 Important: If using Swift development snapshots (6.3-dev), `swift test` may fail with linker errors (`ld: unknown option: -no_warn_duplicate_libraries`). This is a known toolchain bug. Tests work correctly on stable Swift releases.
 
+See `CONTRIBUTING.md` for formatting and documentation conventions, and
+`.github/workflows` for CI and Docs workflows.
+
 ## Package Structure
 
 - `Sources/SwiftCommons/Extensions`: Foundation extensions (Array, Optional, URL, FixedWidthInteger, Locale, NumberFormatter)
