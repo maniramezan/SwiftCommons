@@ -1,5 +1,6 @@
 import XCTest
-@testable import Grallistrix
+
+@testable import SwiftCommons
 
 final class FixedWidthIntegerExtensionsTests: XCTestCase {
     func testFixedWidthIntegerToDigits() {
@@ -7,8 +8,4 @@ final class FixedWidthIntegerExtensionsTests: XCTestCase {
         XCTAssertEqual([4, 3, 2, 1], 001234.digits)
         XCTAssertEqual([4, 0, 1], 104.digits)
     }
-
-    static var allTests = [
-        ("testFixedWidthIntegerToDigits", testFixedWidthIntegerToDigits),
-    ]
 }

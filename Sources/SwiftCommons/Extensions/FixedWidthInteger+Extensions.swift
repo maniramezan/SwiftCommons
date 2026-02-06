@@ -1,13 +1,11 @@
-//
-//  FixedWidthInteger+Extensions.swift
-//  
-//
-//  Created by Mani Ramezan on 9/8/19.
-//
-
 import Foundation
 
 extension FixedWidthInteger {
+    /// Breaks the number to base10 digits representing the number. Result contains all digits in reverse, 0 index has the lowest degree and last index has the highest
+    ///
+    ///     let num = 1234
+    ///     print(num.digits) // [4, 3, 2, 1]
+    ///
     public var digits: [Int] {
         let upperBound = Int(ceil(log10(Double(self))))
         var num = Int(self)
