@@ -34,3 +34,11 @@ jobs:
 
       - name: Test
         run: swift test
+
+      - name: Generate DocC
+        run: |
+          swift package generate-documentation \
+            --target SwiftCommons \
+            --warnings-as-errors \
+            --analyze \
+            --output-path /tmp/docc
