@@ -27,10 +27,18 @@ jobs:
         with:
           swift-version: "6.2"
 
+      - name: Build Symbol Graphs
+        run: |
+          swift build \
+            --target SwiftCommons \
+            -Xswiftc -emit-symbol-graph \
+            -Xswiftc -emit-symbol-graph-dir \
+            -Xswiftc /tmp/symbolgraphs
+
       - name: Generate DocC (Static)
         run: |
-          swift package generate-documentation \
-            --target SwiftCommons \
+          xcrun docc convert Sources/SwiftCommons/SwiftCommons.docc \
+            --additional-symbol-graph-dir /tmp/symbolgraphs \
             --warnings-as-errors \
             --analyze \
             --transform-for-static-hosting \
