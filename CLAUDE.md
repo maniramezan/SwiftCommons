@@ -1,12 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Shared repository guidance for all agents (Codex, Claude, etc.). Keep this file focused on repo-wide facts and conventions that help any agent.
 
 ## Project Overview
 
-SwiftCommons is a Swift Package Manager library providing Foundation extensions and utilities. The package uses Swift 6 language mode and supports macOS 11+, iOS 16+, and Mac Catalyst 16+.
+SwiftCommons is a Swift Package Manager library providing Foundation extensions and utilities. It targets macOS 11+, iOS 16+, and Mac Catalyst 16+. The package uses Swift 6 language mode (`swift-tools-version: 6.2`) and has no external dependencies.
 
-## Building and Testing
+## Build and Test
 
 ```bash
 # Build the package
@@ -19,39 +19,34 @@ swift test
 swift build -v
 ```
 
-**Important:** If using Swift development snapshots (6.3-dev), `swift test` may fail with linker errors (`ld: unknown option: -no_warn_duplicate_libraries`). This is a known toolchain bug. Tests will work correctly when using stable Swift releases.
+Important: If using Swift development snapshots (6.3-dev), `swift test` may fail with linker errors (`ld: unknown option: -no_warn_duplicate_libraries`). This is a known toolchain bug. Tests work correctly on stable Swift releases.
 
 ## Package Structure
 
-The library is organized by functionality:
+- `Sources/SwiftCommons/Extensions`: Foundation extensions (Array, Optional, URL, FixedWidthInteger, Locale, NumberFormatter)
+- `Sources/SwiftCommons/Dates`: Date/time utilities (Calendar extensions, DateFormatter cache)
+- `Sources/SwiftCommons/Locales`: `Language`, `Country`, and locale identifier helpers
+- `Sources/SwiftCommons/Logging`: OSLog `Logger` helpers and SwiftCommons subsystem
+- `Tests/SwiftCommonsTests`: XCTest coverage for extensions and date utilities
 
-- **Extensions/** - Foundation type extensions (Array, Optional, URL, FixedWidthInteger, Locale, NumberFormatter)
-- **Dates/** - Date/time utilities (Calendar, DateFormatter with cached formatters)
-- **Logging/** - OSLog Logger extensions with SwiftCommons subsystem
+## Key APIs and Patterns
 
-## Code Patterns
+- Safe array access with optional or defaulted subscripts (`Array+Extensions`).
+- `Optional.ifNil(_:)` for defaulting optionals.
+- `URL` adopts `ExpressibleByStringLiteral` using `@retroactive` (Swift 6).
+- `DateFormatter.formatter(...)` caches per-thread instances via `Thread.current.threadDictionary`.
+- `Calendar` extensions provide date math (start of week/month, month symbols, adding months/years).
+- `Language` and `Country` enums are curated ISO code subsets (not exhaustive).
+- `Locale.identifier(language:country:)` plus `Locale.Identifiers` convenience constants.
+- Logging helpers built on OSLog with public/private convenience methods and context helpers.
 
-### Safe Array Access
-Extensions provide safe subscripting with optional unwrapping and default values:
-```swift
-arr[safe: index]           // Returns Optional<Element>
-arr[index, default: value] // Returns Element with fallback
-arr[safe: range]           // Safe range access
-```
+## Conventions
 
-### Cached Formatters
-DateFormatter uses a static cache to avoid expensive formatter creation:
-```swift
-DateFormatter.formatter(.MMMMddyyyy, locale: .current, timeZone: .current)
-```
+- 4-space indentation and doc comments on public APIs are the norm.
+- Small, self-contained helpers often use `@inlinable` to match existing style.
+- Avoid adding new dependencies without discussion; keep the library lightweight.
 
-### Logger Integration
-Standardized logging using OSLog with SwiftCommons subsystem:
-```swift
-Logger.swiftCommonsLogger(category: "MyCategory")
-Logger.swiftCommonsLogger(for: MyType.self)
-```
+## When Updating
 
-## Swift 6 Configuration
-
-Package.swift uses package-level `swiftLanguageModes: [.v6]` instead of per-target `swiftSettings`. This is the recommended approach for Swift 6 packages.
+- Add or update tests under `Tests/SwiftCommonsTests` for behavior changes.
+- If you discover repo-wide guidance helpful to other agents, add it here.
