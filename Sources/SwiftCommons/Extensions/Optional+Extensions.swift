@@ -11,11 +11,11 @@ extension Optional {
     /// - Parameter defaultValue: Value to use if nil
     /// - Returns: Default value is nil. Otherwise, current value.
     @inlinable
-    public func ifNil(_ defaultValue: Wrapped) -> Wrapped {
+    public func ifNil(_ defaultValue: @autoclosure () -> Wrapped) -> Wrapped {
         if case .some(let wrapped) = self {
             return wrapped
         }
 
-        return defaultValue
+        return defaultValue()
     }
 }
