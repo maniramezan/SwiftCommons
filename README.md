@@ -1,7 +1,8 @@
 # SwiftCommons
 
-[![Swift 6.2](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
-[![Build](https://github.com/maniramezan/SwiftCommons/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/maniramezan/SwiftCommons/actions/workflows/build.yml)
+[![Swift Package Index](https://img.shields.io/endpoint?url=https://swiftpackageindex.com/api/packages/maniramezan/SwiftCommons/badge?type=swift-versions)](https://swiftpackageindex.com/maniramezan/SwiftCommons)
+[![Swift Package Index](https://img.shields.io/endpoint?url=https://swiftpackageindex.com/api/packages/maniramezan/SwiftCommons/badge?type=platforms)](https://swiftpackageindex.com/maniramezan/SwiftCommons)
+[![Build](https://img.shields.io/github/actions/workflow/status/maniramezan/SwiftCommons/build.yml?branch=main&label=build)](https://github.com/maniramezan/SwiftCommons/actions/workflows/build.yml)
 
 Shared Swift utilities and helpers for reusable app code.
 
