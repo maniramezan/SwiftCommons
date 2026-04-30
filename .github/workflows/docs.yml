@@ -20,15 +20,25 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
 
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6.0.0
 
       - name: Set up Swift
-        uses: swift-actions/setup-swift@v2
+        uses: swift-actions/setup-swift@v2.4.0
         with:
           swift-version: "6.2"
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v5.0.5
+        with:
+          path: |
+            .build
+            .swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
 
       - name: Generate DocC (Static)
         run: |
@@ -38,7 +48,7 @@ jobs:
           bash scripts/docs/redirect-root.sh "SwiftCommons"
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5.0.0
         with:
           path: /tmp/docc-site
 
@@ -51,4 +61,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5.0.0
