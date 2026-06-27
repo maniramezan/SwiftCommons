@@ -20,7 +20,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.0
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6.0.0
@@ -31,7 +31,7 @@ jobs:
           swift-version: "6.2"
 
       - name: Cache SwiftPM
-        uses: actions/cache@v5.0.5
+        uses: actions/cache@v6.1.0
         with:
           path: |
             .build
