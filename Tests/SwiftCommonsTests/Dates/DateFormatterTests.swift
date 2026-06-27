@@ -1,29 +1,34 @@
 import Foundation
-import XCTest
+import Testing
 
 @testable import SwiftCommons
 
-final class DateFormatterTests: XCTestCase {
-    func testFormatterReturnsCorrectFormat() {
+@Suite("DateFormatter extensions")
+struct DateFormatterTests {
+    @Test
+    func formatterReturnsCorrectFormat() {
         let formatter = DateFormatter.formatter(.MMddyyyy, locale: Locale(identifier: "en_US"))
-        XCTAssertEqual(formatter.dateFormat, "MM/dd/yyyy")
+        #expect(formatter.dateFormat == "MM/dd/yyyy")
     }
 
-    func testFormatterCachesPerThread() {
+    @Test
+    func formatterCachesPerThread() {
         let locale = Locale(identifier: "en_US")
         let f1 = DateFormatter.formatter(.MMMMddyyyy, locale: locale)
         let f2 = DateFormatter.formatter(.MMMMddyyyy, locale: locale)
-        XCTAssertTrue(f1 === f2, "Should return the same cached instance")
+        #expect(f1 === f2, "Should return the same cached instance")
     }
 
-    func testDifferentFormatsReturnDifferentFormatters() {
+    @Test
+    func differentFormatsReturnDifferentFormatters() {
         let locale = Locale(identifier: "en_US")
         let f1 = DateFormatter.formatter(.MMMMddyyyy, locale: locale)
         let f2 = DateFormatter.formatter(.MMMMdd, locale: locale)
-        XCTAssertFalse(f1 === f2)
+        #expect(f1 !== f2)
     }
 
-    func testFormatterFormatsDate() {
+    @Test
+    func formatterFormatsDate() {
         let formatter = DateFormatter.formatter(
             .MMddyyyy,
             locale: Locale(identifier: "en_US"),
@@ -31,6 +36,6 @@ final class DateFormatterTests: XCTestCase {
         )
         // Jan 15, 2024 00:00 UTC
         let date = Date(timeIntervalSince1970: 1_705_276_800)
-        XCTAssertEqual(formatter.string(from: date), "01/15/2024")
+        #expect(formatter.string(from: date) == "01/15/2024")
     }
 }

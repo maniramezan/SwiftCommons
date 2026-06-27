@@ -1,28 +1,26 @@
 import Foundation
-import XCTest
+import Testing
 
 @testable import SwiftCommons
 
-final class NumberFormatterExtensionsTests: XCTestCase {
-    func testFormatYearWithDefaultLocale() {
-        let result = NumberFormatter.formatYear(2024, locale: Locale(identifier: "en_US"))
-        XCTAssertEqual(result, "2024")
+@Suite("NumberFormatter extensions")
+struct NumberFormatterExtensionsTests {
+    @Test
+    func formatYearWithDefaultLocale() {
+        #expect(NumberFormatter.formatYear(2024, locale: Locale(identifier: "en_US")) == "2024")
     }
 
-    func testFormatYearWithArabicLocale() {
-        let locale = Locale(identifier: "ar")
-        let result = NumberFormatter.formatYear(2024, locale: locale)
-        // Just verify it produces a non-empty string (output depends on system locale data)
-        XCTAssertFalse(result.isEmpty)
+    @Test
+    func formatYearWithArabicLocaleProducesNonEmptyString() {
+        // Output depends on system locale data, so only verify it is non-empty.
+        #expect(!NumberFormatter.formatYear(2024, locale: Locale(identifier: "ar")).isEmpty)
     }
 
-    func testFormatDay() {
-        let result = NumberFormatter.formatDay(15, locale: Locale(identifier: "en_US"))
-        XCTAssertEqual(result, "15")
-    }
-
-    func testFormatDaySingleDigit() {
-        let result = NumberFormatter.formatDay(5, locale: Locale(identifier: "en_US"))
-        XCTAssertEqual(result, "5")
+    @Test(arguments: [
+        (15, "15"),
+        (5, "5"),
+    ])
+    func formatDay(value: Int, expected: String) {
+        #expect(NumberFormatter.formatDay(value, locale: Locale(identifier: "en_US")) == expected)
     }
 }

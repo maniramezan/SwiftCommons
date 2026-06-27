@@ -1,32 +1,46 @@
 import Foundation
-import XCTest
+import Testing
 
 @testable import SwiftCommons
 
-final class LanguageTests: XCTestCase {
-    func testLanguageCodeMatchesRawValue() {
-        XCTAssertEqual(Language.english.code, "en")
-        XCTAssertEqual(Language.persian.code, "fa")
-        XCTAssertEqual(Language.japanese.code, "ja")
+@Suite("Language")
+struct LanguageTests {
+    @Test(arguments: [
+        (Language.english, "en"),
+        (Language.persian, "fa"),
+        (Language.japanese, "ja"),
+    ])
+    func languageCodeMatchesRawValue(language: Language, code: String) {
+        #expect(language.code == code)
     }
 
-    func testLanguageDisplayName() {
-        XCTAssertEqual(Language.english.displayName, "English")
-        XCTAssertEqual(Language.persian.displayName, "Persian")
+    @Test(arguments: [
+        (Language.english, "English"),
+        (Language.persian, "Persian"),
+        (Language.chinese, "Chinese"),
+        (Language.afrikaans, "Afrikaans"),
+    ])
+    func languageDisplayName(language: Language, expected: String) {
+        #expect(language.displayName == expected)
     }
 
-    func testLanguageRoundTrip() {
-        for language in Language.allCases {
-            let decoded = Language(rawValue: language.rawValue)
-            XCTAssertEqual(decoded, language)
-        }
+    @Test(arguments: Language.allCases)
+    func everyLanguageHasACodeAndDisplayName(language: Language) {
+        // Codes are ISO 639-1: two lowercase letters.
+        #expect(language.code.count == 2)
+        #expect(language.code == language.code.lowercased())
+        #expect(!language.displayName.isEmpty)
     }
 
-    func testLanguageCodable() throws {
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
-        let data = try encoder.encode(Language.english)
-        let decoded = try decoder.decode(Language.self, from: data)
-        XCTAssertEqual(decoded, .english)
+    @Test(arguments: Language.allCases)
+    func languageRoundTrip(language: Language) {
+        #expect(Language(rawValue: language.rawValue) == language)
+    }
+
+    @Test
+    func languageCodable() throws {
+        let data = try JSONEncoder().encode(Language.english)
+        let decoded = try JSONDecoder().decode(Language.self, from: data)
+        #expect(decoded == .english)
     }
 }

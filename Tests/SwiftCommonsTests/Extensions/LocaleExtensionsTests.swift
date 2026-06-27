@@ -1,32 +1,29 @@
 import Foundation
-import XCTest
+import Testing
 
 @testable import SwiftCommons
 
-final class LocaleExtensionsTests: XCTestCase {
-    func testInitWithGregorianCalendar() {
-        let locale = Locale(calendarIdentifier: .gregorian)
-        XCTAssertEqual(locale.identifier, "en_US")
+@Suite("Locale extensions")
+struct LocaleExtensionsTests {
+    @Test(arguments: [
+        (Calendar.Identifier.gregorian, "en_US"),
+        (Calendar.Identifier.persian, "fa_IR"),
+        (Calendar.Identifier.buddhist, "en_US"),
+    ])
+    func initWithCalendarIdentifier(identifier: Calendar.Identifier, expected: String) {
+        #expect(Locale(calendarIdentifier: identifier).identifier == expected)
     }
 
-    func testInitWithPersianCalendar() {
-        let locale = Locale(calendarIdentifier: .persian)
-        XCTAssertEqual(locale.identifier, "fa_IR")
-    }
-
-    func testInitWithUnknownCalendarDefaultsToEnUS() {
-        let locale = Locale(calendarIdentifier: .buddhist)
-        XCTAssertEqual(locale.identifier, "en_US")
-    }
-
-    func testWithNumberingSystemIdentifier() {
+    @Test
+    func withNumberingSystemIdentifier() {
         let base = Locale(identifier: "fa_IR")
         let modified = base.withNumberingSystemIdentifier(.arabExtended)
-        XCTAssertTrue(modified.identifier.contains("arabext"))
+        #expect(modified.identifier.contains("arabext"))
     }
 
-    func testIdentifierConstants() {
-        XCTAssertEqual(Locale.Identifier.faIR, "fa_IR")
-        XCTAssertEqual(Locale.Identifier.enUS, "en_US")
+    @Test
+    func identifierConstants() {
+        #expect(Locale.Identifier.faIR == "fa_IR")
+        #expect(Locale.Identifier.enUS == "en_US")
     }
 }

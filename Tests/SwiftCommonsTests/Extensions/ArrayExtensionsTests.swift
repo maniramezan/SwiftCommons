@@ -1,43 +1,52 @@
-import XCTest
+import Testing
 
 @testable import SwiftCommons
 
-final class ArrayExtensionsTests: XCTestCase {
+@Suite("Array extensions")
+struct ArrayExtensionsTests {
     let array = [1, 2, 3, 4, 5, 6]
 
-    func testFallbackIndexAccess() {
-        XCTAssertEqual(array[-1, default: 13], 13)
-        XCTAssertEqual(array[2, default: 13], 3)
-        XCTAssertEqual(array[6, default: -1], -1)
+    @Test(arguments: [
+        (-1, 13, 13),
+        (2, 13, 3),
+        (6, -1, -1),
+    ])
+    func fallbackIndexAccess(index: Int, defaultValue: Int, expected: Int) {
+        #expect(array[index, default: defaultValue] == expected)
     }
 
-    func testSafeIndexAccess() {
-        XCTAssertNil(array[safe: -1])
-        XCTAssertNil(array[safe: 6])
-        XCTAssertEqual(array[safe: 2], 3)
+    @Test(arguments: [
+        (-1, nil),
+        (6, nil),
+        (2, 3),
+    ])
+    func safeIndexAccess(index: Int, expected: Int?) {
+        #expect(array[safe: index] == expected)
     }
 
-    func testSafeRangeAccess() {
-        XCTAssertEqual(array[safe: 6..<7], [])
-        XCTAssertEqual(array[0..<0, default: 13], [])
-        XCTAssertEqual(array[6..<7, default: 13], [13])
+    @Test
+    func safeRangeAccess() {
+        #expect(array[safe: 6..<7] == [])
+        #expect(array[0..<0, default: 13] == [])
+        #expect(array[6..<7, default: 13] == [13])
 
-        XCTAssertEqual(array[safe: 4..<7], [5, 6])
-        XCTAssertEqual(array[4..<7, default: 13], [5, 6, 13])
+        #expect(array[safe: 4..<7] == [5, 6])
+        #expect(array[4..<7, default: 13] == [5, 6, 13])
 
-        XCTAssertEqual(array[safe: 0..<3], [1, 2, 3])
-        XCTAssertEqual(array[0..<3, default: 13], [1, 2, 3])
+        #expect(array[safe: 0..<3] == [1, 2, 3])
+        #expect(array[0..<3, default: 13] == [1, 2, 3])
     }
 
-    func testSafeClosedRangeAccess() {
-        XCTAssertEqual(array[safe: 6...7], [])
-        XCTAssertEqual(array[0...0, default: 13], [1])
-        XCTAssertEqual(array[6...7, default: 13], [13, 13])
+    @Test
+    func safeClosedRangeAccess() {
+        #expect(array[safe: 6...7] == [])
+        #expect(array[0...0, default: 13] == [1])
+        #expect(array[6...7, default: 13] == [13, 13])
 
-        XCTAssertEqual(array[safe: 4...7], [5, 6])
-        XCTAssertEqual(array[4...7, default: 13], [5, 6, 13, 13])
+        #expect(array[safe: 4...7] == [5, 6])
+        #expect(array[4...7, default: 13] == [5, 6, 13, 13])
 
-        XCTAssertEqual(array[safe: 0...3], [1, 2, 3, 4])
-        XCTAssertEqual(array[0...3, default: 13], [1, 2, 3, 4])
+        #expect(array[safe: 0...3] == [1, 2, 3, 4])
+        #expect(array[0...3, default: 13] == [1, 2, 3, 4])
     }
 }

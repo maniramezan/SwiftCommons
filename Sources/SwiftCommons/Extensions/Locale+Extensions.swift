@@ -25,7 +25,7 @@ extension Locale {
     }
 
     /// Unicode numbering system identifiers for locale customization.
-    public enum NumberingSystemIdentifier: String {
+    public enum NumberingSystemIdentifier: String, Sendable {
         /// Latin digits (0-9).
         case latin = "latn"
         /// Arabic-Indic digits.
