@@ -2,7 +2,7 @@ import Foundation
 
 extension Calendar {
     /// Errors thrown by calendar date computations.
-    public enum CalendarError: Error {
+    public enum CalendarError: Error, Sendable {
         /// Unable to compute the start of a week.
         case cannotCalculateStartOfWeek
         /// Unable to compute the start of a month.
@@ -18,7 +18,7 @@ extension Calendar {
     }
 
     /// Month name presentation style.
-    public enum NameType {
+    public enum NameType: Sendable {
         /// Very short month symbols (e.g., "J").
         case veryShort
         /// Short month symbols (e.g., "Jan").

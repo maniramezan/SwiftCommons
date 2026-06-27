@@ -20,7 +20,11 @@ extension NumberFormatter {
         return formatter
     }
 
-    /// Formats a year value using the provided locale and numbering system.
+    /// Formats a year value using the provided locale.
+    ///
+    /// Digit glyphs follow whatever numbering system is encoded in `locale`. Use
+    /// ``Foundation/Locale/withNumberingSystemIdentifier(_:)`` to request a
+    /// specific numbering system (e.g. Eastern Arabic-Indic digits).
     public static func formatYear(_ year: Int, locale: Locale = .current) -> String {
         let formatter = cachedFormatter(locale: locale, purpose: "year")
         guard let formattedYear = formatter.string(from: year as NSNumber) else {
@@ -30,7 +34,11 @@ extension NumberFormatter {
         return formattedYear
     }
 
-    /// Formats a day or month index using the provided locale and numbering system.
+    /// Formats a day or month index using the provided locale.
+    ///
+    /// Digit glyphs follow whatever numbering system is encoded in `locale`. Use
+    /// ``Foundation/Locale/withNumberingSystemIdentifier(_:)`` to request a
+    /// specific numbering system (e.g. Eastern Arabic-Indic digits).
     public static func formatDay(_ value: Int, locale: Locale = .current) -> String {
         let formatter = cachedFormatter(locale: locale, purpose: "day")
         guard let formatted = formatter.string(from: value as NSNumber) else {

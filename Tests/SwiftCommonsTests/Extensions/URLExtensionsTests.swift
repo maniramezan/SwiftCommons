@@ -1,11 +1,13 @@
 import Foundation
-import XCTest
+import Testing
 
 @testable import SwiftCommons
 
-class URLExtensionsTests: XCTestCase {
-    func testInitWithStaticStringLiteralWorks() {
+@Suite("URL extensions")
+struct URLExtensionsTests {
+    @Test
+    func initWithStaticStringLiteralWorks() {
         let validURL: URL = "https://www.foo.com"
-        XCTAssertEqual(validURL.absoluteString, "https://www.foo.com")
+        #expect(validURL.absoluteString == "https://www.foo.com")
     }
 }

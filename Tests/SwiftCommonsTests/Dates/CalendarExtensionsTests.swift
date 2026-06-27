@@ -1,9 +1,10 @@
 import Foundation
-import XCTest
+import Testing
 
 @testable import SwiftCommons
 
-final class CalendarExtensionsTests: XCTestCase {
+@Suite("Calendar extensions")
+struct CalendarExtensionsTests {
     private var calendar: Calendar {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "UTC")!
@@ -17,80 +18,119 @@ final class CalendarExtensionsTests: XCTestCase {
         Date(timeIntervalSince1970: 1_705_320_000)
     }
 
-    func testMonthFromDate() {
-        XCTAssertEqual(calendar.month(from: sampleDate), 1)
+    @Test
+    func componentsFromDate() {
+        #expect(calendar.month(from: sampleDate) == 1)
+        #expect(calendar.year(from: sampleDate) == 2024)
+        #expect(calendar.day(from: sampleDate) == 15)
     }
 
-    func testYearFromDate() {
-        XCTAssertEqual(calendar.year(from: sampleDate), 2024)
-    }
-
-    func testDayFromDate() {
-        XCTAssertEqual(calendar.day(from: sampleDate), 15)
-    }
-
-    func testStartOfMonth() throws {
+    @Test
+    func startOfMonth() throws {
         let start = try calendar.startOfMonth(for: sampleDate)
-        XCTAssertEqual(calendar.day(from: start), 1)
-        XCTAssertEqual(calendar.month(from: start), 1)
+        #expect(calendar.day(from: start) == 1)
+        #expect(calendar.month(from: start) == 1)
     }
 
-    func testNumberOfDaysInMonth() throws {
+    @Test
+    func startOfWeek() throws {
+        // Week containing Mon Jan 15, 2024 begins on Sun Jan 14 (firstWeekday = Sunday).
+        let start = try calendar.startOfWeek(of: sampleDate)
+        #expect(calendar.year(from: start) == 2024)
+        #expect(calendar.month(from: start) == 1)
+        #expect(calendar.day(from: start) == 14)
+    }
+
+    @Test
+    func startOfMonthDay() throws {
+        // Jan 1, 2024 is a Monday → weekday index 2 (Sunday = 1).
+        #expect(try calendar.startOfMonthDay(for: sampleDate) == 2)
+    }
+
+    @Test
+    func numberOfDaysForDate() throws {
         // January 2024
-        XCTAssertEqual(try calendar.numberOfDays(in: 1, year: 2024), 31)
-        // February 2024 (leap year)
-        XCTAssertEqual(try calendar.numberOfDays(in: 2, year: 2024), 29)
-        // February 2023 (non-leap)
-        XCTAssertEqual(try calendar.numberOfDays(in: 2, year: 2023), 28)
+        #expect(try calendar.numberOfDays(for: sampleDate) == 31)
     }
 
-    func testNextMonthFirstDate() throws {
+    @Test(arguments: [
+        (1, 2024, 31),  // January
+        (2, 2024, 29),  // February (leap year)
+        (2, 2023, 28),  // February (non-leap)
+    ])
+    func numberOfDaysInMonth(month: Int, year: Int, expected: Int) throws {
+        #expect(try calendar.numberOfDays(in: month, year: year) == expected)
+    }
+
+    @Test
+    func nextMonthFirstDate() throws {
         let next = try calendar.nextMonthFirstDate(for: sampleDate)
-        XCTAssertEqual(calendar.month(from: next), 2)
-        XCTAssertEqual(calendar.day(from: next), 1)
+        #expect(calendar.month(from: next) == 2)
+        #expect(calendar.day(from: next) == 1)
     }
 
-    func testPreviousMonthFirstDate() throws {
+    @Test
+    func previousMonthFirstDate() throws {
         let prev = try calendar.previousMonthFirstDate(for: sampleDate)
-        XCTAssertEqual(calendar.month(from: prev), 12)
-        XCTAssertEqual(calendar.year(from: prev), 2023)
+        #expect(calendar.month(from: prev) == 12)
+        #expect(calendar.year(from: prev) == 2023)
     }
 
-    func testNextMonthWrapDecemberToJanuary() throws {
+    @Test
+    func nextMonthWrapsDecemberToJanuary() throws {
         // Dec 15, 2024
         let dec = Date(timeIntervalSince1970: 1_734_220_800)
         let next = try calendar.nextMonthFirstDate(for: dec)
-        XCTAssertEqual(calendar.month(from: next), 1)
-        XCTAssertEqual(calendar.year(from: next), 2025)
+        #expect(calendar.month(from: next) == 1)
+        #expect(calendar.year(from: next) == 2025)
     }
 
-    func testNextYear() throws {
+    @Test
+    func nextYear() throws {
         let next = try calendar.nextYear(for: sampleDate)
-        XCTAssertEqual(calendar.year(from: next), 2025)
-        XCTAssertEqual(calendar.month(from: next), 1)
+        #expect(calendar.year(from: next) == 2025)
+        #expect(calendar.month(from: next) == 1)
     }
 
-    func testPreviousYear() throws {
+    @Test
+    func previousYear() throws {
         let prev = try calendar.previousYear(for: sampleDate)
-        XCTAssertEqual(calendar.year(from: prev), 2023)
+        #expect(calendar.year(from: prev) == 2023)
     }
 
-    func testMonthSymbol() {
-        let symbol = calendar.monthSymbol(for: sampleDate, type: .standalone)
-        XCTAssertEqual(symbol, "January")
+    @Test
+    func updateYearPreservesMonthAndDay() throws {
+        let updated = try calendar.updateYear(2030, for: sampleDate)
+        #expect(calendar.year(from: updated) == 2030)
+        #expect(calendar.month(from: updated) == 1)
+        #expect(calendar.day(from: updated) == 15)
     }
 
-    func testMonthSymbolShort() {
-        let symbol = calendar.monthSymbol(for: sampleDate, type: .short)
-        XCTAssertEqual(symbol, "Jan")
+    @Test
+    func updateMonthPreservesDay() throws {
+        let updated = try calendar.updateMonth(6, for: sampleDate)
+        #expect(calendar.month(from: updated) == 6)
+        #expect(calendar.day(from: updated) == 15)
+        #expect(calendar.year(from: updated) == 2024)
     }
 
-    func testIsToday() {
+    @Test(arguments: [
+        (Calendar.NameType.standalone, "January"),
+        (Calendar.NameType.short, "Jan"),
+        (Calendar.NameType.veryShort, "J"),
+        (Calendar.NameType.veryShortStandalone, "J"),
+    ])
+    func monthSymbol(type: Calendar.NameType, expected: String) {
+        #expect(calendar.monthSymbol(for: sampleDate, type: type) == expected)
+    }
+
+    @Test
+    func isToday() {
         let today = Date()
         let day = calendar.day(from: today)
         let month = calendar.month(from: today)
         let year = calendar.year(from: today)
-        XCTAssertTrue(calendar.isToday(day: day, month: month, year: year))
-        XCTAssertFalse(calendar.isToday(day: day + 1, month: month, year: year))
+        #expect(calendar.isToday(day: day, month: month, year: year))
+        #expect(!calendar.isToday(day: day + 1, month: month, year: year))
     }
 }

@@ -2,7 +2,7 @@ import Foundation
 
 extension DateFormatter {
     /// Common date format templates used by SwiftCommons.
-    public enum FormatType: String {
+    public enum FormatType: String, Sendable {
         /// "MMMM dd, yyyy" format (e.g., "January 30, 2026").
         // swift-format-ignore: AlwaysUseLowerCamelCase
         case MMMMddyyyy = "MMMM dd, yyyy"
@@ -26,7 +26,7 @@ extension DateFormatter {
     ) -> DateFormatter {
         // DateFormatter is not thread-safe; cache per-thread and per (format, locale, timeZone).
         let cacheKey =
-            "com.swiftutils.dateformatter.\(formatterType.rawValue)|\(locale.identifier)|\(timeZone.identifier)"
+            "com.swiftcommons.dateformatter.\(formatterType.rawValue)|\(locale.identifier)|\(timeZone.identifier)"
         let threadCache = Thread.current.threadDictionary
 
         if let cached = threadCache[cacheKey] as? DateFormatter {

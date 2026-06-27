@@ -1,14 +1,18 @@
-import XCTest
+import Testing
 
 @testable import SwiftCommons
 
-class OptionalExtensionsTests: XCTestCase {
-    func testIfNilExtension() {
+@Suite("Optional extensions")
+struct OptionalExtensionsTests {
+    @Test
+    func ifNilReturnsWrappedValueWhenPresent() {
+        let value: String? = "some string"
+        #expect(value.ifNil("another string") == "some string")
+    }
 
-        var nonNil: String? = "some string"
-        XCTAssertEqual(nonNil.ifNil("another string"), "some string")
-
-        nonNil = nil
-        XCTAssertEqual(nonNil.ifNil("another string"), "another string")
+    @Test
+    func ifNilReturnsDefaultWhenNil() {
+        let value: String? = nil
+        #expect(value.ifNil("another string") == "another string")
     }
 }

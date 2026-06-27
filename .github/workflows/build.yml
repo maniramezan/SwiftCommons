@@ -52,7 +52,41 @@ jobs:
         run: swift build
 
       - name: Test
-        run: swift test
+        run: swift test --enable-code-coverage
+
+      - name: Coverage report and gate
+        env:
+          MIN_COVERAGE: "90"
+        run: |
+          bin_path="$(swift build --show-bin-path)"
+          profdata="${bin_path}/codecov/default.profdata"
+          xctest="$(find "${bin_path}" -maxdepth 1 -name '*.xctest' | head -n 1)"
+          binary="${xctest}/Contents/MacOS/$(basename "${xctest}" .xctest)"
+
+          report="$(xcrun llvm-cov report "${binary}" \
+            -instr-profile "${profdata}" \
+            -ignore-filename-regex='.build|Tests')"
+          echo "${report}"
+
+          coverage="$(xcrun llvm-cov export "${binary}" \
+            -instr-profile "${profdata}" \
+            -ignore-filename-regex='.build|Tests' \
+            -summary-only \
+            | python3 -c 'import json,sys; print("%.2f" % json.load(sys.stdin)["data"][0]["totals"]["lines"]["percent"])')"
+
+          {
+            echo "## Code coverage: ${coverage}% (minimum ${MIN_COVERAGE}%)"
+            echo '```'
+            echo "${report}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          if awk -v c="${coverage}" -v m="${MIN_COVERAGE}" 'BEGIN { exit !(c + 0 >= m + 0) }'; then
+            echo "Line coverage ${coverage}% meets the ${MIN_COVERAGE}% minimum."
+          else
+            echo "::error::Line coverage ${coverage}% is below the required ${MIN_COVERAGE}% minimum."
+            exit 1
+          fi
 
       - name: Build Symbol Graphs
         run: |
@@ -65,6 +99,7 @@ jobs:
       - name: Generate DocC
         run: |
           xcrun docc convert \
+            Sources/SwiftCommons/SwiftCommons.docc \
             --additional-symbol-graph-dir /tmp/symbolgraphs \
             --fallback-display-name SwiftCommons \
             --fallback-bundle-identifier com.maniramezan.swiftcommons \
