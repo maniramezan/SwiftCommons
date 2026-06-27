@@ -38,6 +38,12 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   `Locale.Identifiers`, and `withNumberingSystemIdentifier(_:)`).
 - **Logging** — OSLog `Logger` conveniences for category creation, privacy
   levels, and error/context logging.
+- **State & configuration** — a generic ``LoadingState`` machine with
+  ``LoadingError`` for async fetches, and a coercing ``ConfigValue``.
+- **Concurrency** — ``AsyncLock``, a FIFO async mutual-exclusion lock that
+  serializes work across `await` points.
+- **Formatting** — ``DurationFormatter`` for compact `m:ss` / `h:mm:ss`
+  durations.
 
 Foundation, Swift standard library, and OSLog extensions are listed under
 **Extensions** below.
@@ -48,3 +54,17 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 
 - ``Language``
 - ``Country``
+
+### State & Configuration
+
+- ``LoadingState``
+- ``LoadingError``
+- ``ConfigValue``
+
+### Concurrency
+
+- ``AsyncLock``
+
+### Formatting
+
+- ``DurationFormatter``
