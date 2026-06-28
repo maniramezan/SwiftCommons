@@ -6,7 +6,8 @@
   "bump-minor-pre-major": true,
   "packages": {
     ".": {
-      "package-name": "SwiftCommons"
+      "package-name": "SwiftCommons",
+      "skip-changelog": true
     }
   }
 }
