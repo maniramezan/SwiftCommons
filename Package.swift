@@ -10,6 +10,10 @@ let package = Package(
             name: "SwiftCommons",
             targets: ["SwiftCommons"])
     ],
+    traits: [
+        .trait(
+            name: "CSV", description: "Enables lightweight CSV parsing and serialization helpers")
+    ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.1.0")
     ],
