@@ -26,6 +26,38 @@ struct CalendarExtensionsTests {
     }
 
     @Test
+    func datesThroughSameDayReturnsSingleStartOfDay() throws {
+        let date = try #require(
+            calendar.date(from: DateComponents(year: 2024, month: 1, day: 15, hour: 12)))
+
+        let dates = calendar.dates(from: date, through: date)
+
+        #expect(dates == [calendar.startOfDay(for: date)])
+    }
+
+    @Test
+    func datesThroughReturnsInclusiveSequence() throws {
+        let start = try #require(
+            calendar.date(from: DateComponents(year: 2024, month: 1, day: 29, hour: 12)))
+        let end = try #require(
+            calendar.date(from: DateComponents(year: 2024, month: 2, day: 2, hour: 12)))
+
+        let dates = calendar.dates(from: start, through: end)
+
+        #expect(dates.count == 5)
+        #expect(dates.map { calendar.day(from: $0) } == [29, 30, 31, 1, 2])
+        #expect(dates.allSatisfy { $0 == calendar.startOfDay(for: $0) })
+    }
+
+    @Test
+    func datesThroughWithStartAfterEndReturnsEmpty() throws {
+        let start = try #require(calendar.date(from: DateComponents(year: 2024, month: 1, day: 16)))
+        let end = try #require(calendar.date(from: DateComponents(year: 2024, month: 1, day: 15)))
+
+        #expect(calendar.dates(from: start, through: end).isEmpty)
+    }
+
+    @Test
     func startOfMonth() throws {
         let start = try calendar.startOfMonth(for: sampleDate)
         #expect(calendar.day(from: start) == 1)
