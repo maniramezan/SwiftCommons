@@ -118,6 +118,26 @@ extension Calendar {
         component(.day, from: date)
     }
 
+    /// Returns start-of-day dates from `startDate` through `endDate`, inclusive.
+    ///
+    /// If `startDate` is after `endDate`, the result is empty. Dates are advanced with this calendar
+    /// instead of fixed time intervals so daylight saving transitions and calendar rules are respected.
+    public func dates(from startDate: Date, through endDate: Date) -> [Date] {
+        var dates: [Date] = []
+        var currentDate = startOfDay(for: startDate)
+        let targetEndDate = startOfDay(for: endDate)
+
+        while currentDate <= targetEndDate {
+            dates.append(currentDate)
+            guard let nextDate = date(byAdding: .day, value: 1, to: currentDate) else {
+                break
+            }
+            currentDate = nextDate
+        }
+
+        return dates
+    }
+
     /// Returns the first date of the next month.
     public func nextMonthFirstDate(for date: Date) throws -> Date {
         let month = month(from: date)
