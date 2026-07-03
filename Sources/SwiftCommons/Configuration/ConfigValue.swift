@@ -80,4 +80,46 @@ public enum ConfigValue: Sendable, Hashable {
     ) -> [String: ConfigValue] {
         environment.mapValues { .string($0) }
     }
+
+    /// Builds a `[String: ConfigValue]` dictionary from a decoded property
+    /// list (e.g. the result of `PropertyListSerialization.propertyList(from:...)`
+    /// or `NSDictionary(contentsOf:)`).
+    ///
+    ///     let plistData = try Data(contentsOf: url)
+    ///     let raw = try PropertyListSerialization.propertyList(from: plistData, format: nil)
+    ///     let config = ConfigValue.propertyList(raw as? [String: Any] ?? [:])
+    ///
+    /// Recognizes `Bool`, `String`, integer, and floating-point values.
+    /// Booleans are detected reliably even for property lists decoded through
+    /// Foundation's `NSNumber` bridging, where a raw `0`/`1` `Int` can
+    /// otherwise be indistinguishable from `Bool` via `as? Bool`. Any other
+    /// value type is stored as its `String(describing:)` representation.
+    ///
+    /// - Parameter dictionary: The decoded property list dictionary.
+    /// - Returns: A dictionary mapping each key to its coerced `ConfigValue`.
+    public static func propertyList(_ dictionary: [String: Any]) -> [String: ConfigValue] {
+        dictionary.mapValues(ConfigValue.init(propertyListValue:))
+    }
+
+    /// Creates a `ConfigValue` from a single property-list-compatible value.
+    ///
+    /// See ``propertyList(_:)`` for the type-detection rules applied.
+    public init(propertyListValue value: Any) {
+        if let number = value as? NSNumber {
+            if CFGetTypeID(number) == CFBooleanGetTypeID() {
+                self = .bool(number.boolValue)
+            } else {
+                let objCType = String(cString: number.objCType)
+                self =
+                    objCType == "d" || objCType == "f"
+                    ? .double(number.doubleValue) : .int(number.intValue)
+            }
+        } else if let string = value as? String {
+            self = .string(string)
+        } else if let double = value as? Double {
+            self = .double(double)
+        } else {
+            self = .string(String(describing: value))
+        }
+    }
 }

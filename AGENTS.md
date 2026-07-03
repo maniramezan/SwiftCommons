@@ -32,9 +32,10 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Sources/SwiftCommons/Logging`: OSLog `Logger` helpers and SwiftCommons subsystem
 - `Sources/SwiftCommons/Formatters`: `DurationFormatter` for human-readable durations
 - `Sources/SwiftCommons/State`: `LoadingState<Value>` async data-loading state machine
-- `Sources/SwiftCommons/Configuration`: `ConfigValue` for lenient cross-type config coercion and environment loading
+- `Sources/SwiftCommons/Configuration`: `ConfigValue` for lenient cross-type config coercion, environment loading, and property-list loading
 - `Sources/SwiftCommons/Concurrency`: `AsyncLock`, `AsyncSemaphore`, `Debouncer`, and `withRetry(...)`
 - `Sources/SwiftCommons/CSV`: lightweight CSV parsing/serialization helpers (behind the `CSV` package trait)
+- `Sources/SwiftCommons/Persistence`: `ModelContainer.make(for:inMemory:)` SwiftData bootstrap helper
 - `Sources/SwiftCommons/Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncableModel`, `SyncMetadata`, DTOs)
 - `Tests/SwiftCommonsTests`: Swift Testing coverage mirroring the `Sources` structure
 
@@ -63,7 +64,10 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   error details behind a generic, user-safe message.
 - `ConfigValue` is a `bool`/`string`/`int`/`double` enum with lenient coercion accessors
   (`boolValue`, `stringValue`, `intValue`, `doubleValue`); `ConfigValue.environment(_:)` loads
-  `[String: ConfigValue]` from `ProcessInfo.environment` (or an injected dictionary) for tests.
+  `[String: ConfigValue]` from `ProcessInfo.environment` (or an injected dictionary) for tests;
+  `ConfigValue.propertyList(_:)` loads from a decoded plist dictionary, detecting real `Bool`
+  values via `CFGetTypeID`/`CFBooleanGetTypeID` since NSNumber bridging makes `0`/`1` respond
+  `true` to a naive `as? Bool` check.
 - `AsyncLock` is a FIFO async mutex for serializing work across `await` suspension points.
 - `AsyncSemaphore` is a counting async semaphore (`wait()`/`signal()`/`withPermit { ... }`) for
   capping concurrent access (e.g. limiting parallel network requests).
@@ -71,6 +75,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `withRetry(attempts:delay:operation:)` retries a throwing async operation with a fixed delay.
 - `CSV` provides lightweight CSV parsing/serialization; gated behind the `CSV` package trait to
   keep it opt-in.
+- `ModelContainer.make(for:inMemory:)` is a thin bootstrap over `ModelContainer.init(for:configurations:)`
+  for the common single-store, persistent-vs-in-memory case (apps, previews, and tests).
 - `SyncEngine` (`@MainActor`) drives offline sync for SwiftData `@Model` rows conforming to `SyncableModel`; each resource plugs in via a `SyncResourceAdapter` (struct of closures) and the engine owns the contract (ack guard, pending guard, full-snapshot reconciliation, pagination drain, full-resync recovery).
 - `SyncableModel` requires `isTombstoned`, NOT `isDeleted`: on a SwiftData `@Model` a stored `isDeleted` is shadowed by `PersistentModel.isDeleted` (context hard-delete state), so writes don't read back on the live object. Never name a soft-delete flag `isDeleted` on a `@Model`.
 
