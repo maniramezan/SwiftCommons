@@ -15,7 +15,7 @@ let package = Package(
             name: "CSV", description: "Enables lightweight CSV parsing and serialization helpers")
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.1.0")
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0")
     ],
     targets: [
         .target(
