@@ -4,7 +4,7 @@ Shared repository guidance for all agents (Codex, Claude, etc.). Keep this file 
 
 ## Project Overview
 
-SwiftCommons is a Swift Package Manager library providing Foundation extensions and utilities. It targets macOS 13+, iOS 16+, and Mac Catalyst 16+. The package uses Swift 6 language mode (`swift-tools-version: 6.2`) and has no external dependencies.
+SwiftCommons is a Swift Package Manager library providing Foundation extensions and utilities. It targets macOS 14+, iOS 17+, and Mac Catalyst 17+ (SwiftData requires these minimums). The package uses Swift 6 language mode (`swift-tools-version: 6.2`) and has no external dependencies.
 
 ## Build and Test
 
@@ -30,7 +30,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Sources/SwiftCommons/Dates`: Date/time utilities (Calendar extensions, DateFormatter cache)
 - `Sources/SwiftCommons/Locales`: `Language`, `Country`, and locale identifier helpers
 - `Sources/SwiftCommons/Logging`: OSLog `Logger` helpers and SwiftCommons subsystem
-- `Tests/SwiftCommonsTests`: XCTest coverage for extensions and date utilities
+- `Sources/SwiftCommons/Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncableModel`, `SyncMetadata`, DTOs)
+- `Tests/SwiftCommonsTests`: Swift Testing coverage for extensions, date utilities, and the sync engine
 
 ## Key APIs and Patterns
 
@@ -42,6 +43,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Language` and `Country` enums are curated ISO code subsets (not exhaustive).
 - `Locale.identifier(language:country:)` plus `Locale.Identifiers` convenience constants.
 - Logging helpers built on OSLog with public/private convenience methods and context helpers.
+- `SyncEngine` (`@MainActor`) drives offline sync for SwiftData `@Model` rows conforming to `SyncableModel`; each resource plugs in via a `SyncResourceAdapter` (struct of closures) and the engine owns the contract (ack guard, pending guard, full-snapshot reconciliation, pagination drain, full-resync recovery).
+- `SyncableModel` requires `isTombstoned`, NOT `isDeleted`: on a SwiftData `@Model` a stored `isDeleted` is shadowed by `PersistentModel.isDeleted` (context hard-delete state), so writes don't read back on the live object. Never name a soft-delete flag `isDeleted` on a `@Model`.
 
 ## Conventions
 

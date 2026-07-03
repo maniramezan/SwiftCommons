@@ -6,8 +6,8 @@ Foundation extensions and small, dependency-free utilities for reusable app code
 
 SwiftCommons is a lightweight Swift Package Manager library of Foundation
 extensions and helpers used across Apple-platform apps. It has no external
-runtime dependencies, builds in Swift 6 language mode, and targets macOS 13+,
-iOS 16+, and Mac Catalyst 16+.
+runtime dependencies, builds in Swift 6 language mode, and targets macOS 14+,
+iOS 17+, and Mac Catalyst 17+.
 
 ```swift
 import SwiftCommons
@@ -44,6 +44,9 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   serializes work across `await` points.
 - **Formatting** — ``DurationFormatter`` for compact `m:ss` / `h:mm:ss`
   durations.
+- **Sync** — a generic ``SyncEngine`` that drives offline, cross-device sync
+  for SwiftData-backed resources through one contract-owning loop; resources
+  plug in as ``SyncResourceAdapter`` values.
 
 Foundation, Swift standard library, and OSLog extensions are listed under
 **Extensions** below.
@@ -68,3 +71,16 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 ### Formatting
 
 - ``DurationFormatter``
+
+### Sync
+
+- ``SyncEngine``
+- ``SyncResourceAdapter``
+- ``AnySyncResource``
+- ``SyncableModel``
+- ``SyncState``
+- ``SyncMetadata``
+- ``SyncEvent``
+- ``SyncRequestDTO``
+- ``SyncResponseDTO``
+- ``SyncAppliedDTO``
