@@ -31,6 +31,29 @@ public enum LoadingState<Value: Equatable & Sendable>: Equatable, Sendable {
 
     /// The failure, or `nil` in any other state.
     public var error: LoadingError? { if case .failed(let error) = self { error } else { nil } }
+
+    /// Runs a throwing async operation and maps its outcome to ``loaded(_:)``
+    /// or ``failed(_:)``.
+    ///
+    ///     state = await .load { try await api.fetchItems() }
+    ///
+    /// Thrown errors are converted with ``LoadingError/init(from:)``, which
+    /// discards internal error details in favor of a generic, user-safe
+    /// message. Call sites that need error-type-specific messaging should
+    /// catch the error themselves and construct a ``LoadingError`` directly.
+    ///
+    /// - Parameter operation: The asynchronous, throwing operation to run.
+    /// - Returns: ``loaded(_:)`` with the operation's result, or
+    ///   ``failed(_:)`` if it threw.
+    public static func load(
+        _ operation: () async throws -> Value
+    ) async -> LoadingState<Value> {
+        do {
+            return .loaded(try await operation())
+        } catch {
+            return .failed(LoadingError(from: error))
+        }
+    }
 }
 
 /// A user-presentable failure produced while loading.
