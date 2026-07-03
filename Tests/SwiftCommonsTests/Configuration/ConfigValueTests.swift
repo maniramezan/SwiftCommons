@@ -66,4 +66,62 @@ struct ConfigValueTests {
         let config = ConfigValue.environment()
         #expect(config.count == ProcessInfo.processInfo.environment.count)
     }
+
+    @Test
+    func propertyListClassifiesSwiftLiteralTypes() {
+        let config = ConfigValue.propertyList([
+            "flag": true,
+            "count": 5,
+            "ratio": 2.5,
+            "name": "hi",
+        ])
+        #expect(config["flag"] == .bool(true))
+        #expect(config["count"] == .int(5))
+        #expect(config["ratio"] == .double(2.5))
+        #expect(config["name"] == .string("hi"))
+    }
+
+    @Test
+    func propertyListDistinguishesBooleanFromZeroAndOneAfterPlistRoundTrip() throws {
+        // NSNumber bridging makes `0`/`1` respond `true` to `as? Bool`, so this
+        // exercises the CFBoolean-vs-CFNumber detection in `init(propertyListValue:)`
+        // using values decoded exactly as Foundation's plist APIs would produce them.
+        let raw: [String: Any] = [
+            "zero": 0,
+            "one": 1,
+            "trueFlag": true,
+            "falseFlag": false,
+        ]
+        let data = try PropertyListSerialization.data(
+            fromPropertyList: raw, format: .xml, options: 0)
+        let decoded =
+            try PropertyListSerialization.propertyList(from: data, format: nil)
+            as? [String: Any] ?? [:]
+
+        let config = ConfigValue.propertyList(decoded)
+        #expect(config["zero"] == .int(0))
+        #expect(config["one"] == .int(1))
+        #expect(config["trueFlag"] == .bool(true))
+        #expect(config["falseFlag"] == .bool(false))
+    }
+
+    @Test
+    func propertyListDistinguishesWholeNumberDoublesFromInts() throws {
+        let raw: [String: Any] = ["wholeDouble": 3.0, "ratio": 2.5]
+        let data = try PropertyListSerialization.data(
+            fromPropertyList: raw, format: .xml, options: 0)
+        let decoded =
+            try PropertyListSerialization.propertyList(from: data, format: nil)
+            as? [String: Any] ?? [:]
+
+        let config = ConfigValue.propertyList(decoded)
+        #expect(config["wholeDouble"] == .double(3.0))
+        #expect(config["ratio"] == .double(2.5))
+    }
+
+    @Test
+    func propertyListFallsBackToDescribingUnknownTypes() {
+        let config = ConfigValue.propertyList(["date": Date(timeIntervalSince1970: 0)])
+        #expect(config["date"]?.stringValue.isEmpty == false)
+    }
 }
