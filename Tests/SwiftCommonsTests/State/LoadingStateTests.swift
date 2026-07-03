@@ -45,6 +45,21 @@ struct LoadingStateTests {
         #expect(LoadingState<Int>.loaded(1) != .loaded(2))
         #expect(LoadingState<Int>.idle != .loading)
     }
+
+    @Test
+    func loadReturnsLoadedOnSuccess() async {
+        let state = await LoadingState.load { 42 }
+        #expect(state == .loaded(42))
+    }
+
+    @Test
+    func loadReturnsFailedWithRedactedMessageOnThrow() async {
+        struct Secret: Error { let detail = "Unauthorized access for user 1234" }
+
+        let state = await LoadingState<Int>.load { throw Secret() }
+        #expect(state.error?.message == "Something went wrong. Please try again.")
+        #expect(state.value == nil)
+    }
 }
 
 @Suite("LoadingError")
