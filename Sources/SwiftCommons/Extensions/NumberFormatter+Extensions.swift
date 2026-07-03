@@ -47,4 +47,33 @@ extension NumberFormatter {
         }
         return formatted
     }
+
+    /// Formats an amount as localized currency.
+    ///
+    ///     NumberFormatter.formatCurrency(9.99, currencyCode: "USD", locale: .init(identifier: "en_US")) // "$9.99"
+    ///     NumberFormatter.formatCurrency(9.99, currencyCode: "EUR", locale: .init(identifier: "de_DE")) // "9,99 €"
+    ///
+    /// - Parameters:
+    ///   - amount: The amount to format.
+    ///   - currencyCode: An ISO 4217 currency code (e.g. `"USD"`). When `nil`,
+    ///     the currency implied by `locale` is used.
+    ///   - locale: The locale to apply. Defaults to `Locale.current`.
+    /// - Returns: The formatted currency string, or the plain numeric value if
+    ///   formatting fails.
+    public static func formatCurrency(
+        _ amount: Decimal,
+        currencyCode: String? = nil,
+        locale: Locale = .current
+    ) -> String {
+        let formatter = cachedFormatter(locale: locale, purpose: "currency|\(currencyCode ?? "")")
+        formatter.numberStyle = .currency
+        if let currencyCode {
+            formatter.currencyCode = currencyCode
+        }
+        guard let formatted = formatter.string(from: amount as NSDecimalNumber) else {
+            logger.errorPublic("Failed to format currency amount")
+            return String(describing: amount)
+        }
+        return formatted
+    }
 }
