@@ -8,7 +8,10 @@ let package = Package(
     products: [
         .library(
             name: "SwiftCommons",
-            targets: ["SwiftCommons"])
+            targets: ["SwiftCommons"]),
+        .library(
+            name: "SwiftCommonsTestSupport",
+            targets: ["SwiftCommonsTestSupport"]),
     ],
     traits: [
         .trait(
@@ -20,9 +23,12 @@ let package = Package(
     targets: [
         .target(
             name: "SwiftCommons"),
+        .target(
+            name: "SwiftCommonsTestSupport",
+            dependencies: ["SwiftCommons"]),
         .testTarget(
             name: "SwiftCommonsTests",
-            dependencies: ["SwiftCommons"],
+            dependencies: ["SwiftCommons", "SwiftCommonsTestSupport"],
             plugins: [
                 .plugin(name: "SwiftFormatLintPlugin")
             ]),
