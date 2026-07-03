@@ -26,14 +26,15 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 
 ## Package Structure
 
-- `Sources/SwiftCommons/Extensions`: Foundation extensions (Array, Optional, URL, String, Bundle, FixedWidthInteger, Locale, NumberFormatter)
-- `Sources/SwiftCommons/Dates`: Date/time utilities (Calendar extensions, DateFormatter cache)
+- `Sources/SwiftCommons/Extensions`: Foundation extensions (Array, Optional, URL, String, Bundle, UUID, Duration, FixedWidthInteger, Locale, NumberFormatter)
+- `Sources/SwiftCommons/Dates`: Date/time utilities (Calendar extensions incl. inclusive date ranges, DateFormatter cache, `Date.relativeDescription(...)`)
 - `Sources/SwiftCommons/Locales`: `Language`, `Country`, and locale identifier helpers
 - `Sources/SwiftCommons/Logging`: OSLog `Logger` helpers and SwiftCommons subsystem
 - `Sources/SwiftCommons/Formatters`: `DurationFormatter` for human-readable durations
 - `Sources/SwiftCommons/State`: `LoadingState<Value>` async data-loading state machine
-- `Sources/SwiftCommons/Configuration`: `ConfigValue` for lenient cross-type config coercion
-- `Sources/SwiftCommons/Concurrency`: `AsyncLock`, `Debouncer`, and `withRetry(...)`
+- `Sources/SwiftCommons/Configuration`: `ConfigValue` for lenient cross-type config coercion and environment loading
+- `Sources/SwiftCommons/Concurrency`: `AsyncLock`, `AsyncSemaphore`, `Debouncer`, and `withRetry(...)`
+- `Sources/SwiftCommons/CSV`: lightweight CSV parsing/serialization helpers (behind the `CSV` package trait)
 - `Sources/SwiftCommons/Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncableModel`, `SyncMetadata`, DTOs)
 - `Tests/SwiftCommonsTests`: Swift Testing coverage mirroring the `Sources` structure
 
@@ -43,9 +44,16 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Optional.ifNil(_:)` for defaulting optionals.
 - `String.trimmed`, `.isBlank`, `.nilIfBlank` for normalizing text input.
 - `Bundle.appVersion`, `.buildNumber`, `.versionAndBuildNumber` for app version display.
+- `UUID` extensions for byte access and deterministic generation.
+- `Duration.timeInterval` bridges `Duration` to `TimeInterval`.
 - `URL` adopts `ExpressibleByStringLiteral` using `@retroactive` (Swift 6).
 - `DateFormatter.formatter(...)` caches per-thread instances via `Thread.current.threadDictionary`.
-- `Calendar` extensions provide date math (start of week/month, month symbols, adding months/years).
+- `NumberFormatter.formatYear(_:locale:)`, `.formatDay(_:locale:)`, and `.formatCurrency(_:currencyCode:locale:)`
+  cache formatters per-thread and per (purpose, locale) the same way.
+- `Date.relativeDescription(to:unitsStyle:locale:)` wraps `RelativeDateTimeFormatter` with the same
+  per-thread caching pattern (e.g. "1 hour ago").
+- `Calendar` extensions provide date math (start of week/month, month symbols, adding months/years,
+  inclusive date ranges via `dates(from:through:)`).
 - `Language` and `Country` enums are curated ISO code subsets (not exhaustive).
 - `Locale.identifier(language:country:)` plus `Locale.Identifiers` convenience constants.
 - Logging helpers built on OSLog with public/private convenience methods and context helpers.
@@ -54,10 +62,15 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   runs a throwing async operation and maps the outcome; `LoadingError(from:)` redacts internal
   error details behind a generic, user-safe message.
 - `ConfigValue` is a `bool`/`string`/`int`/`double` enum with lenient coercion accessors
-  (`boolValue`, `stringValue`, `intValue`, `doubleValue`).
+  (`boolValue`, `stringValue`, `intValue`, `doubleValue`); `ConfigValue.environment(_:)` loads
+  `[String: ConfigValue]` from `ProcessInfo.environment` (or an injected dictionary) for tests.
 - `AsyncLock` is a FIFO async mutex for serializing work across `await` suspension points.
+- `AsyncSemaphore` is a counting async semaphore (`wait()`/`signal()`/`withPermit { ... }`) for
+  capping concurrent access (e.g. limiting parallel network requests).
 - `Debouncer` (actor) coalesces rapid repeated calls into one action after a quiet period.
 - `withRetry(attempts:delay:operation:)` retries a throwing async operation with a fixed delay.
+- `CSV` provides lightweight CSV parsing/serialization; gated behind the `CSV` package trait to
+  keep it opt-in.
 - `SyncEngine` (`@MainActor`) drives offline sync for SwiftData `@Model` rows conforming to `SyncableModel`; each resource plugs in via a `SyncResourceAdapter` (struct of closures) and the engine owns the contract (ack guard, pending guard, full-snapshot reconciliation, pagination drain, full-resync recovery).
 - `SyncableModel` requires `isTombstoned`, NOT `isDeleted`: on a SwiftData `@Model` a stored `isDeleted` is shadowed by `PersistentModel.isDeleted` (context hard-delete state), so writes don't read back on the live object. Never name a soft-delete flag `isDeleted` on a `@Model`.
 

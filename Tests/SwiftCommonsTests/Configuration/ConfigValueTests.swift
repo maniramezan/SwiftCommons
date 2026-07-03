@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import SwiftCommons
@@ -49,5 +50,20 @@ struct ConfigValueTests {
     func isHashable() {
         let set: Set<ConfigValue> = [.int(1), .int(1), .string("1")]
         #expect(set.count == 2)
+    }
+
+    @Test
+    func environmentWrapsEveryValueAsString() {
+        let config = ConfigValue.environment(["DEBUG_MODE": "true", "RETRY_COUNT": "3"])
+        #expect(config["DEBUG_MODE"] == .string("true"))
+        #expect(config["RETRY_COUNT"] == .string("3"))
+        #expect(config["DEBUG_MODE"]?.boolValue == true)
+        #expect(config["RETRY_COUNT"]?.intValue == 3)
+    }
+
+    @Test
+    func environmentDefaultsToProcessInfoEnvironment() {
+        let config = ConfigValue.environment()
+        #expect(config.count == ProcessInfo.processInfo.environment.count)
     }
 }
