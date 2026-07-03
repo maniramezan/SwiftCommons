@@ -58,4 +58,26 @@ public enum ConfigValue: Sendable, Hashable {
         case .double(let v): v
         }
     }
+
+    // MARK: - Loading
+
+    /// Builds a `[String: ConfigValue]` dictionary from process environment
+    /// variables, wrapping every value as `.string`.
+    ///
+    /// Environment variables are always strings, so callers rely on the
+    /// lenient coercion accessors (``boolValue``, ``intValue``, ``doubleValue``)
+    /// to read them as other types:
+    ///
+    ///     let config = ConfigValue.environment()
+    ///     let isDebug = config["DEBUG_MODE"]?.boolValue ?? false
+    ///
+    /// - Parameter environment: The environment to read from. Defaults to
+    ///   `ProcessInfo.processInfo.environment`.
+    /// - Returns: A dictionary mapping each environment variable name to its
+    ///   `.string` value.
+    public static func environment(
+        _ environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> [String: ConfigValue] {
+        environment.mapValues { .string($0) }
+    }
 }
