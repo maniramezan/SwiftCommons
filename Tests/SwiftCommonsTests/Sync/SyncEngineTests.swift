@@ -3,6 +3,7 @@ import SwiftData
 import Testing
 
 @testable import SwiftCommons
+@testable import SwiftCommonsTestSupport
 
 @MainActor
 @Suite("SyncEngine")
