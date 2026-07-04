@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 
 @testable import SwiftCommons
+@testable import SwiftCommonsTestSupport
 
 // A minimal syncable resource used to exercise the generic engine.
 
@@ -51,13 +52,6 @@ struct ItemChange: Decodable, Sendable {
 }
 
 typealias ItemResponse = SyncResponseDTO<ItemChange>
-
-/// A mutable capture box for recording values inside adapter closures.
-@MainActor
-final class Box<T> {
-    var value: T
-    init(_ value: T) { self.value = value }
-}
 
 enum SyncFixtures {
     static func makeContainer() throws -> ModelContainer {

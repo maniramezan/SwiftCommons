@@ -26,18 +26,24 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 
 ## Package Structure
 
-- `Sources/SwiftCommons/Extensions`: Foundation extensions (Array, Optional, URL, String, Bundle, UUID, Duration, FixedWidthInteger, Locale, NumberFormatter)
-- `Sources/SwiftCommons/Dates`: Date/time utilities (Calendar extensions incl. inclusive date ranges, DateFormatter cache, `Date.relativeDescription(...)`)
-- `Sources/SwiftCommons/Locales`: `Language`, `Country`, and locale identifier helpers
-- `Sources/SwiftCommons/Logging`: OSLog `Logger` helpers and SwiftCommons subsystem
-- `Sources/SwiftCommons/Formatters`: `DurationFormatter` for human-readable durations
-- `Sources/SwiftCommons/State`: `LoadingState<Value>` async data-loading state machine
-- `Sources/SwiftCommons/Configuration`: `ConfigValue` for lenient cross-type config coercion, environment loading, and property-list loading
-- `Sources/SwiftCommons/Concurrency`: `AsyncLock`, `AsyncSemaphore`, `Debouncer`, and `withRetry(...)`
-- `Sources/SwiftCommons/CSV`: lightweight CSV parsing/serialization helpers (behind the `CSV` package trait)
-- `Sources/SwiftCommons/Persistence`: `ModelContainer.make(for:inMemory:)` SwiftData bootstrap helper
-- `Sources/SwiftCommons/Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncableModel`, `SyncMetadata`, DTOs)
-- `Tests/SwiftCommonsTests`: Swift Testing coverage mirroring the `Sources` structure
+- `Sources/SwiftCommons`: the main library (extensions, dates, locales, logging, formatters, state,
+  configuration, concurrency, CSV, persistence, sync — see below).
+  - `Extensions`: Foundation extensions (Array, Optional, URL, String, Bundle, UUID, Duration, FixedWidthInteger, Locale, NumberFormatter)
+  - `Dates`: Date/time utilities (Calendar extensions incl. inclusive date ranges, DateFormatter cache, `Date.relativeDescription(...)`)
+  - `Locales`: `Language`, `Country`, and locale identifier helpers
+  - `Logging`: OSLog `Logger` helpers and SwiftCommons subsystem
+  - `Formatters`: `DurationFormatter` for human-readable durations
+  - `State`: `LoadingState<Value>` async data-loading state machine
+  - `Configuration`: `ConfigValue` for lenient cross-type config coercion, environment loading, and property-list loading
+  - `Concurrency`: `AsyncLock`, `AsyncSemaphore`, `Debouncer`, `withRetry(...)`, and the injectable `SwiftCommonsClock` abstraction
+  - `CSV`: lightweight CSV parsing/serialization helpers (behind the `CSV` package trait)
+  - `Persistence`: `ModelContainer.make(for:inMemory:)` SwiftData bootstrap helper
+  - `Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncableModel`, `SyncMetadata`, DTOs)
+- `Sources/SwiftCommonsTestSupport`: a separate library product with test-only helpers for consumers
+  of `SwiftCommons` (fake clock, `LoadingState` assertions, in-memory SwiftData context helper, and
+  generic sync test fixtures). Depends on `SwiftCommons`; never add app-facing (non-test) APIs here.
+- `Tests/SwiftCommonsTests`: Swift Testing coverage mirroring the `Sources` structure (covers both
+  `SwiftCommons` and `SwiftCommonsTestSupport`).
 
 ## Key APIs and Patterns
 
@@ -72,13 +78,25 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `AsyncSemaphore` is a counting async semaphore (`wait()`/`signal()`/`withPermit { ... }`) for
   capping concurrent access (e.g. limiting parallel network requests).
 - `Debouncer` (actor) coalesces rapid repeated calls into one action after a quiet period.
-- `withRetry(attempts:delay:operation:)` retries a throwing async operation with a fixed delay.
+- `withRetry(attempts:delay:clock:operation:)` retries a throwing async operation with a fixed delay.
+- `SwiftCommonsClock` is the injectable clock protocol behind `withRetry` and `Debouncer`'s delays
+  (default: `ContinuousSwiftCommonsClock`, backed by `Task.sleep(for:)`). Both APIs default to the
+  real clock, so existing call sites are unaffected; tests can inject
+  `ManualSwiftCommonsClock` (in `SwiftCommonsTestSupport`) to avoid real-time waits.
 - `CSV` provides lightweight CSV parsing/serialization; gated behind the `CSV` package trait to
   keep it opt-in.
 - `ModelContainer.make(for:inMemory:)` is a thin bootstrap over `ModelContainer.init(for:configurations:)`
-  for the common single-store, persistent-vs-in-memory case (apps, previews, and tests).
+  for the common single-store, persistent-vs-in-memory case (apps, previews, and tests). An
+  array-taking overload (`make(for: [any PersistentModel.Type], inMemory:)`) exists for callers that
+  only know the model types dynamically.
 - `SyncEngine` (`@MainActor`) drives offline sync for SwiftData `@Model` rows conforming to `SyncableModel`; each resource plugs in via a `SyncResourceAdapter` (struct of closures) and the engine owns the contract (ack guard, pending guard, full-snapshot reconciliation, pagination drain, full-resync recovery).
 - `SyncableModel` requires `isTombstoned`, NOT `isDeleted`: on a SwiftData `@Model` a stored `isDeleted` is shadowed by `PersistentModel.isDeleted` (context hard-delete state), so writes don't read back on the live object. Never name a soft-delete flag `isDeleted` on a `@Model`.
+- `SwiftCommonsTestSupport` (separate product) provides: `ManualSwiftCommonsClock` (fake, manually
+  advanced `SwiftCommonsClock` — poll `waiterCount` before calling `advance(by:)` to avoid racing
+  against code under test that hasn't registered its sleep yet); `expectLoaded(_:)`/`expectFailed(_:)`
+  for asserting on `LoadingState`; `makeInMemoryModelContext(for:)` for a ready-to-use SwiftData
+  `ModelContext`; and `Box<Value>` (`@MainActor` mutable capture reference) plus `recordingCall(returning:into:)`
+  for recording requests made through a `SyncResourceAdapter`'s `call:` closure in tests.
 
 ## Working Agreement
 
@@ -97,6 +115,7 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 ## Common Paths
 
 - Sources: `Sources/SwiftCommons/`
+- Test support (separate product): `Sources/SwiftCommonsTestSupport/`
 - Tests: `Tests/SwiftCommonsTests/`
 
 ## Planning

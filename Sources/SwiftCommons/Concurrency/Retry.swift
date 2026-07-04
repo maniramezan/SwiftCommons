@@ -16,6 +16,10 @@ import Foundation
 ///   - attempts: The maximum number of attempts. Must be at least `1`.
 ///   - delay: The delay awaited between attempts. Not applied after the final
 ///     attempt. Defaults to `.zero`.
+///   - clock: The clock used to wait between attempts. Defaults to
+///     ``ContinuousSwiftCommonsClock``. Tests can inject a fake clock (see
+///     `ManualSwiftCommonsClock` in `SwiftCommonsTestSupport`) to avoid real
+///     delays.
 ///   - operation: The asynchronous, throwing operation to attempt.
 /// - Returns: The value returned by `operation` on its first successful attempt.
 /// - Throws: The error thrown by the final attempt, or `CancellationError` if
@@ -23,6 +27,7 @@ import Foundation
 public func withRetry<Value: Sendable>(
     attempts: Int,
     delay: Duration = .zero,
+    clock: some SwiftCommonsClock = ContinuousSwiftCommonsClock(),
     operation: @Sendable () async throws -> Value
 ) async throws -> Value {
     precondition(attempts >= 1, "attempts must be at least 1")
@@ -38,7 +43,7 @@ public func withRetry<Value: Sendable>(
                 break
             }
             if delay > .zero {
-                try await Task.sleep(for: delay)
+                try await clock.sleep(for: delay)
             } else {
                 try Task.checkCancellation()
             }

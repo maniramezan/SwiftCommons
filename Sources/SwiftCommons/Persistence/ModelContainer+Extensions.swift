@@ -29,6 +29,23 @@ extension ModelContainer {
         for types: any PersistentModel.Type...,
         inMemory: Bool = false
     ) throws -> ModelContainer {
+        try make(for: types, inMemory: inMemory)
+    }
+
+    /// Array-taking variant of `make(for:inMemory:)`, useful when the set of
+    /// model types is only known dynamically (for example, when building a
+    /// helper on top of this API).
+    ///
+    /// - Parameters:
+    ///   - types: The `PersistentModel` types the container should manage.
+    ///   - inMemory: When `true`, uses a transient, in-memory store. Defaults
+    ///     to `false`.
+    /// - Returns: A configured `ModelContainer`.
+    /// - Throws: Any error thrown by `ModelContainer.init(for:configurations:)`.
+    public static func make(
+        for types: [any PersistentModel.Type],
+        inMemory: Bool = false
+    ) throws -> ModelContainer {
         let schema = Schema(types)
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         return try ModelContainer(for: schema, configurations: [configuration])
