@@ -11,17 +11,19 @@ public enum DurationFormatter {
     /// an hour or more the hour component is prepended as `h:mm:ss`.
     ///
     /// - Parameter seconds: The duration in seconds. Negative values are
-    ///   formatted using their truncated components and are not recommended.
+    ///   formatted with a leading minus sign.
     /// - Returns: The formatted duration string.
     public static func format(seconds: Int) -> String {
-        let hours = seconds / 3600
-        let minutes = (seconds % 3600) / 60
-        let remainingSeconds = seconds % 60
+        let magnitude = seconds.magnitude
+        let hours = magnitude / 3600
+        let minutes = (magnitude % 3600) / 60
+        let remainingSeconds = magnitude % 60
+        let sign = seconds < 0 ? "-" : ""
 
         return if hours > 0 {
-            String(format: "%d:%02d:%02d", hours, minutes, remainingSeconds)
+            "\(sign)\(hours):\(String(format: "%02llu", minutes)):\(String(format: "%02llu", remainingSeconds))"
         } else {
-            String(format: "%d:%02d", minutes, remainingSeconds)
+            "\(sign)\(minutes):\(String(format: "%02llu", remainingSeconds))"
         }
     }
 }
