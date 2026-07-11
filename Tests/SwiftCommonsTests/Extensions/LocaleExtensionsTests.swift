@@ -11,14 +11,27 @@ struct LocaleExtensionsTests {
         (Calendar.Identifier.buddhist, "en_US"),
     ])
     func initWithCalendarIdentifier(identifier: Calendar.Identifier, expected: String) {
-        #expect(Locale(calendarIdentifier: identifier).identifier == expected)
+        let locale = Locale(calendarIdentifier: identifier)
+        #expect(
+            locale.language.languageCode?.identifier
+                == Locale(identifier: expected).language.languageCode?.identifier)
+        #expect(locale.calendar.identifier == identifier)
     }
 
     @Test
     func withNumberingSystemIdentifier() {
         let base = Locale(identifier: "fa_IR")
         let modified = base.withNumberingSystemIdentifier(.arabExtended)
-        #expect(modified.identifier.contains("arabext"))
+        #expect(modified.numberingSystem.identifier == "arabext")
+    }
+
+    @Test
+    func withNumberingSystemIdentifierReplacesAnExistingUnicodeExtension() {
+        let base = Locale(identifier: "en-US-u-ca-gregory-nu-latn")
+        let modified = base.withNumberingSystemIdentifier(.arab)
+
+        #expect(modified.numberingSystem.identifier == "arab")
+        #expect(modified.calendar.identifier == .gregorian)
     }
 
     @Test
