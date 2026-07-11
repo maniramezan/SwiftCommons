@@ -32,7 +32,12 @@ struct DebouncerTests {
             await Task.yield()
         }
         await clock.advance(by: .milliseconds(50))
-        await Task.yield()
+
+        var iterations = 0
+        while await recorder.values != [5], iterations < 1_000 {
+            await Task.yield()
+            iterations += 1
+        }
 
         #expect(await recorder.values == [5])
     }
