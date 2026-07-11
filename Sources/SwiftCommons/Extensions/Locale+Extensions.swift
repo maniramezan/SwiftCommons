@@ -12,16 +12,10 @@ extension Locale {
     /// Creates a locale that matches the provided calendar identifier.
     /// - Parameter calendarIdentifier: The calendar system to derive the locale from.
     public init(calendarIdentifier: Calendar.Identifier) {
-        let identifier: String
-        switch calendarIdentifier {
-        case .gregorian:
-            identifier = Identifier.enUS
-        case .persian:
-            identifier = Identifier.faIR
-        default:
-            identifier = Identifier.enUS
-        }
-        self.init(identifier: identifier)
+        let identifier = calendarIdentifier == .persian ? Identifier.faIR : Identifier.enUS
+        var components = Locale.Components(identifier: identifier)
+        components.calendar = calendarIdentifier
+        self.init(components: components)
     }
 
     /// Unicode numbering system identifiers for locale customization.
@@ -37,6 +31,8 @@ extension Locale {
     /// Returns a copy of the locale using the specified numbering system.
     /// - Parameter system: The numbering system identifier to apply.
     public func withNumberingSystemIdentifier(_ system: NumberingSystemIdentifier) -> Locale {
-        Locale(identifier: "\(identifier)-u-nu-\(system.rawValue)")
+        var components = Locale.Components(locale: self)
+        components.numberingSystem = .init(system.rawValue)
+        return Locale(components: components)
     }
 }

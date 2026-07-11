@@ -33,6 +33,7 @@ public final class SyncEngine {
         events: @escaping @Sendable (SyncEvent) async -> Void = { _ in },
         logger: Logger = .swiftCommonsLogger(for: SyncEngine.self)
     ) {
+        precondition(limit > 0, "limit must be greater than 0")
         self.modelContainer = modelContainer
         self.limit = limit
         self.lock = lock

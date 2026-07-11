@@ -35,6 +35,16 @@ struct DurationFormatterTests {
     }
 
     @Test(arguments: [
+        (-1, "-0:01"),
+        (-61, "-1:01"),
+        (-3601, "-1:00:01"),
+        (Int.min, "-2562047788015215:30:08"),
+    ])
+    func formatsNegativeValues(seconds: Int, expected: String) {
+        #expect(DurationFormatter.format(seconds: seconds) == expected)
+    }
+
+    @Test(arguments: [
         (0, "0:00"),
         (59, "0:59"),
         (60, "1:00"),

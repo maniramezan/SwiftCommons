@@ -17,7 +17,7 @@ Add SwiftCommons as a Swift Package Manager dependency:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.2.0")
+    .package(url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.3.0")
 ]
 ```
 
@@ -41,7 +41,7 @@ SwiftCommons ships two products:
 CSV helpers are opt-in via the `CSV` package trait:
 
 ```swift
-.package(url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.2.0", traits: ["CSV"])
+.package(url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.3.0", traits: ["CSV"])
 ```
 
 ## Features
