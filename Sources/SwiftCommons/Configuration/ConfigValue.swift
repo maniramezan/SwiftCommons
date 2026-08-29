@@ -59,6 +59,34 @@ public enum ConfigValue: Sendable, Hashable {
         }
     }
 
+    // MARK: - String decoding
+
+    /// Builds a value from a plain string, coerced to `valueType`: `.bool` goes through
+    /// `Bool(parsing:)` (so `0`/`1` and `yes`/`no` work); `.int` / `.double` use their
+    /// `LosslessStringConvertible` initializers; `.string` is taken verbatim. Returns `nil`
+    /// when the string can't be read as that type.
+    ///
+    /// Useful when a value arrives as text and the expected type is known separately.
+    ///
+    /// - Parameters:
+    ///   - string: The raw string.
+    ///   - valueType: The type to coerce to.
+    public init?(string: String, valueType: ConfigValueType) {
+        switch valueType {
+        case .bool:
+            guard let value = Bool(parsing: string) else { return nil }
+            self = .bool(value)
+        case .string:
+            self = .string(string)
+        case .int:
+            guard let value = Int(parsing: string) else { return nil }
+            self = .int(value)
+        case .double:
+            guard let value = Double(parsing: string) else { return nil }
+            self = .double(value)
+        }
+    }
+
     // MARK: - Loading
 
     /// Builds a `[String: ConfigValue]` dictionary from process environment
