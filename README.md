@@ -47,8 +47,10 @@ CSV helpers are opt-in via the `CSV` package trait:
 ## Features
 
 - **Extensions** — safe/defaulted `Array` subscripts, `Optional.ifNil(_:)`, `String` blank/trim
-  helpers, `Bundle` app-version accessors, `UUID` byte/deterministic helpers, `Duration.timeInterval`,
-  `URL` string-literal support, and locale-aware `NumberFormatter`/`FixedWidthInteger` helpers.
+  helpers, the `StringParsable` protocol (`T(parsing:)` with a lenient `Bool` parser) and
+  `String(flag:)` boolean-flag helpers, `Bundle` app-version accessors, `UUID` byte/deterministic
+  helpers, `Duration.timeInterval`, `URL` string-literal support, and locale-aware
+  `NumberFormatter`/`FixedWidthInteger` helpers.
 - **Dates & calendars** — `Calendar` date math (start of week/month, inclusive date ranges, month
   arithmetic), a thread-safe `DateFormatter` cache, and `Date.relativeDescription(...)` for
   human-readable relative times ("1 hour ago").
@@ -88,6 +90,10 @@ let resolved = name.ifNil("Anonymous")   // "Anonymous"
 ```swift
 "  hi  ".trimmed        // "hi"
 "   ".nilIfBlank        // nil
+
+Bool(parsing: "yes")   // true — also accepts 1/0, on/off, true/false
+Int(parsing: "42")     // 42 — T(parsing:) works for any StringParsable
+String(flag: true)     // "1"
 
 Bundle.main.versionAndBuildNumber  // "2.3.1 (142)"
 
