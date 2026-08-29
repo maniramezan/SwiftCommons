@@ -60,7 +60,8 @@ CSV helpers are opt-in via the `CSV` package trait:
 - **State** — a generic `LoadingState` machine (`idle`/`loading`/`loaded`/`failed`) with a
   user-safe `LoadingError`, including a `LoadingState.load { ... }` helper for wrapping async work.
 - **Configuration** — `ConfigValue`, a lenient `bool`/`string`/`int`/`double` coercion type, with
-  loaders for `ProcessInfo.environment` and decoded property lists.
+  loaders for `ProcessInfo.environment` and decoded property lists, plus a `ConfigValueType` tag and
+  `ConfigValue(string:valueType:)` for decoding a textual value whose type is known separately.
 - **Concurrency** — `AsyncLock` (FIFO mutex), `AsyncSemaphore` (counting semaphore), `Debouncer`,
   and `withRetry(...)` — all built on the injectable `SwiftCommonsClock` abstraction so consumers
   can substitute a fake clock in tests.
@@ -146,6 +147,10 @@ if let error = state.error { showError(error.message, retryable: error.isRetryab
 
 let config = ConfigValue.environment()
 let isDebug = config["DEBUG_MODE"]?.boolValue ?? false
+
+// Decode a textual value when its type is known separately
+ConfigValue(string: "yes", valueType: .bool)  // .bool(true)
+ConfigValue(string: "7.5", valueType: .int)   // nil
 ```
 
 ### Concurrency
