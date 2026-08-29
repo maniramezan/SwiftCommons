@@ -48,7 +48,9 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
 - **State & configuration** — a generic ``LoadingState`` machine with
   ``LoadingError`` for async fetches (including ``LoadingState/load(_:)`` to
   wrap a throwing async operation), and a coercing ``ConfigValue`` with
-  loaders for the process environment and decoded property lists.
+  loaders for the process environment and decoded property lists, plus a
+  ``ConfigValueType`` tag and ``ConfigValue/init(string:valueType:)`` for
+  decoding a textual value whose type is known separately.
 - **Concurrency** — ``AsyncLock`` (FIFO mutex), ``AsyncSemaphore`` (counting
   semaphore), ``Debouncer``, and ``withRetry(attempts:delay:clock:operation:)``,
   all built on the injectable ``SwiftCommonsClock`` abstraction.
@@ -85,6 +87,7 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 - ``LoadingState``
 - ``LoadingError``
 - ``ConfigValue``
+- ``ConfigValueType``
 
 ### Concurrency
 
