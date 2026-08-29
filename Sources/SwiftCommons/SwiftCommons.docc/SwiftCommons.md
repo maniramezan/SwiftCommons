@@ -29,6 +29,8 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
 - **Collections & optionals** — safe and defaulted subscripts on `Array`
   (`[safe:]`, `[_, default:]`, and range variants) and `Optional.ifNil(_:)`.
 - **Strings, Bundle, UUID, Duration** — `String.trimmed`/`.isBlank`/`.nilIfBlank`,
+  the ``StringParsable`` protocol (`T(parsing:)` with a lenient `Bool` parser)
+  and `String(flag:)`/`.enabledFlag`/`.disabledFlag` boolean-flag helpers,
   `Bundle.appVersion`/`.buildNumber`/`.versionAndBuildNumber`, `UUID` byte and
   deterministic-generation helpers, and `Duration.timeInterval`.
 - **Numbers** — `FixedWidthInteger.digits` and locale-aware
@@ -68,6 +70,10 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 **Extensions** below.
 
 ## Topics
+
+### Parsing
+
+- ``StringParsable``
 
 ### Localization
 
