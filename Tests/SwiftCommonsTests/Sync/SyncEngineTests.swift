@@ -453,7 +453,12 @@ struct SyncEngineTests {
         _ = try await (a, b)
 
         // With a shared lock, one pass fully finishes before the other starts.
-        #expect(order.value == ["enter-a", "exit-a", "enter-b", "exit-b"])
+        // Which pass wins the race for the lock is not deterministic, so accept
+        // either serialized order — only interleaving would be a failure.
+        #expect(
+            order.value == ["enter-a", "exit-a", "enter-b", "exit-b"]
+                || order.value == ["enter-b", "exit-b", "enter-a", "exit-a"]
+        )
     }
 
     @Test func changeWithoutKeyIsIgnoredDuringReconciliation() async throws {
