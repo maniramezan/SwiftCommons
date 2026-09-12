@@ -138,6 +138,24 @@ logger.infoPublic("Started")
 logger.error("Failed to load", error: error, context: "id=\(id)")
 ```
 
+### Signposts
+
+`SignpostRecorder` wraps `OSSignposter` for measuring work that has to fit inside a frame —
+scrolling, animation, rendering. Recording is free when no profiler is attached.
+
+```swift
+let signposts = SignpostRecorder(subsystem: "MyApp", category: "Rendering")
+
+let grid = signposts.measure("resolveGrid") { expensiveGridResolution() }
+
+// Start and end driven by separate callbacks
+let state = signposts.begin("scrollSettle")
+signposts.end("scrollSettle", state)
+```
+
+Record with Instruments' **os_signpost** instrument, or
+`xcrun xctrace record --template 'os_signpost' --attach <pid>`.
+
 ### State & configuration
 
 ```swift
