@@ -35,3 +35,12 @@ Use this file to track non-trivial work. Keep it short and updated as you go.
 ## Open Questions
 
 - None
+
+
+## Calendar arithmetic extraction
+
+- [x] Extract Foundation-only month identity and arithmetic; retain navigation limits in SwiftUICalendar.
+- [x] Improve month helpers and cover Gregorian, Persian, Hebrew, Chinese leap months, Japanese eras, DST, and invalid input.
+- [x] Pass full SwiftCommons tests and formatting.
+- [x] Verify 95.85% line coverage and DocC with warnings treated as errors.
+- [ ] Merge PR and publish the release.

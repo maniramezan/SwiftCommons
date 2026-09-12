@@ -44,12 +44,7 @@ extension Calendar {
 
     /// Returns the first day of the month containing the given date.
     public func startOfMonth(for date: Date) throws -> Date {
-        guard
-            let startOfMonthDate = self.date(
-                from: dateComponents(
-                    [.year, .month],
-                    from: date))
-        else {
+        guard let startOfMonthDate = dateInterval(of: .month, for: date)?.start else {
             throw CalendarError.cannotCalculateStartOfMonth
         }
 
@@ -75,12 +70,7 @@ extension Calendar {
 
     /// Returns the number of days in the month containing the given date.
     public func numberOfDays(for date: Date) throws -> Int {
-        let year = year(from: date)
-        let month = month(from: date)
-        let dateComponents = DateComponents(year: year, month: month)
-        guard let date = self.date(from: dateComponents),
-            let range = self.range(of: .day, in: .month, for: date)
-        else {
+        guard let range = self.range(of: .day, in: .month, for: date) else {
             throw CalendarError.cannotCalculateNumberOfDays
         }
         return range.count
@@ -140,17 +130,9 @@ extension Calendar {
 
     /// Returns the first date of the next month.
     public func nextMonthFirstDate(for date: Date) throws -> Date {
-        let month = month(from: date)
-        let year = year(from: date)
-        let nextMonth = month + 1
-        let nextYear = nextMonth > 12 ? year + 1 : year
-        let nextMonthNumber = nextMonth > 12 ? 1 : nextMonth
-        guard
-            let firstDayDate = self.date(
-                from: DateComponents(
-                    year: nextYear,
-                    month: nextMonthNumber,
-                    day: 1))
+        guard let start = dateInterval(of: .month, for: date)?.start,
+            let shifted = self.date(byAdding: .month, value: 1, to: start),
+            let firstDayDate = dateInterval(of: .month, for: shifted)?.start
         else {
             throw CalendarError.cannotCalculateNextMonthFirstDate
         }
@@ -159,17 +141,9 @@ extension Calendar {
 
     /// Returns the first date of the previous month.
     public func previousMonthFirstDate(for date: Date) throws -> Date {
-        let month = month(from: date)
-        let year = year(from: date)
-        let previousMonth = month - 1
-        let previousYear = previousMonth < 1 ? year - 1 : year
-        let previousMonthNumber = previousMonth < 1 ? 12 : previousMonth
-        guard
-            let firstDayDate = self.date(
-                from: DateComponents(
-                    year: previousYear,
-                    month: previousMonthNumber,
-                    day: 1))
+        guard let start = dateInterval(of: .month, for: date)?.start,
+            let shifted = self.date(byAdding: .month, value: -1, to: start),
+            let firstDayDate = dateInterval(of: .month, for: shifted)?.start
         else {
             throw CalendarError.cannotCalculatePreviousMonthFirstDate
         }
