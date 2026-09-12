@@ -55,7 +55,7 @@ public struct SignpostRecorder: Sendable {
     }
 
     /// Returns a recorder in the SwiftCommons subsystem, mirroring
-    /// ``Logger/swiftCommonsLogger(category:)``.
+    /// `Logger.swiftCommonsLogger(category:)`.
     public static func swiftCommons(category: String) -> SignpostRecorder {
         SignpostRecorder(subsystem: Logger.swiftCommonsSubsystem, category: category)
     }
@@ -97,7 +97,7 @@ public struct SignpostRecorder: Sendable {
 
     /// Begins an interval that ``end(_:_:)`` closes later.
     ///
-    /// Prefer ``measure(_:_:)`` when the work is lexically scoped. Use this pair when the start and
+    /// Prefer `measure(_:_:)` when the work is lexically scoped. Use this pair when the start and
     /// end are driven by separate callbacks — a gesture beginning and settling, for example.
     ///
     /// - Returns: The state to hand back to ``end(_:_:)``, or `nil` when signposts are disabled.
