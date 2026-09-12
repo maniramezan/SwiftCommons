@@ -44,7 +44,8 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   identifier helpers (`Locale.identifier(language:country:)`,
   `Locale.Identifiers`, and `withNumberingSystemIdentifier(_:)`).
 - **Logging** — OSLog `Logger` conveniences for category creation, privacy
-  levels, and error/context logging.
+  levels, and error/context logging, plus ``SignpostRecorder`` for measuring
+  frame-budgeted work with Instruments' os_signpost instrument.
 - **State & configuration** — a generic ``LoadingState`` machine with
   ``LoadingError`` for async fetches (including ``LoadingState/load(_:)`` to
   wrap a throwing async operation), and a coercing ``ConfigValue`` with

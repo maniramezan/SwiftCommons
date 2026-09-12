@@ -31,7 +31,7 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   - `Extensions`: Foundation extensions (Array, Optional, URL, String, Bundle, UUID, Duration, FixedWidthInteger, Locale, NumberFormatter)
   - `Dates`: Date/time utilities (Calendar extensions incl. inclusive date ranges, DateFormatter cache, `Date.relativeDescription(...)`)
   - `Locales`: `Language`, `Country`, and locale identifier helpers
-  - `Logging`: OSLog `Logger` helpers and SwiftCommons subsystem
+  - `Logging`: OSLog `Logger` helpers, the SwiftCommons subsystem, and `SignpostRecorder`
   - `Formatters`: `DurationFormatter` for human-readable durations
   - `State`: `LoadingState<Value>` async data-loading state machine
   - `Configuration`: `ConfigValue` for lenient cross-type config coercion, environment loading, and property-list loading
@@ -64,6 +64,12 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Language` and `Country` enums are curated ISO code subsets (not exhaustive).
 - `Locale.identifier(language:country:)` plus `Locale.Identifiers` convenience constants.
 - Logging helpers built on OSLog with public/private convenience methods and context helpers.
+- `SignpostRecorder` wraps `OSSignposter` (`measure(_:_:)` sync and async, `begin`/`end` for
+  interval pairs driven by separate callbacks, `event(_:)`, `isEnabled`). Every entry point
+  short-circuits when no profiler is attached, so call sites need no `#if` guards. Interval names
+  are `StaticString` because the unified logging system records them by pointer. The async
+  `measure` and `begin` allocate a fresh signpost ID so overlapping intervals are not paired with
+  each other by the default `.exclusive` ID.
 - `DurationFormatter.format(seconds:)` renders compact `m:ss` / `h:mm:ss` durations.
 - `LoadingState<Value>` models idle/loading/loaded/failed screen state; `LoadingState.load { ... }`
   runs a throwing async operation and maps the outcome; `LoadingError(from:)` redacts internal
