@@ -35,7 +35,8 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   deterministic-generation helpers, and `Duration.timeInterval`.
 - **Numbers** — `FixedWidthInteger.digits` and locale-aware
   `NumberFormatter` helpers (`formatYear`, `formatDay`, `formatCurrency`).
-- **Dates & calendars** — `Calendar` date math (start of week/month, month
+- **Dates & calendars** — ``MonthIdentifier`` and ``CalendarArithmetic`` preserve
+  era and leap-month identity without application date limits, alongside `Calendar` date math (start of week/month, month
   symbols, month/year arithmetic, inclusive date ranges via `dates(from:through:)`),
   a thread-safe `DateFormatter.formatter(_:)` cache, and
   `Date.relativeDescription(to:unitsStyle:locale:)` for human-readable relative
