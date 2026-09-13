@@ -73,11 +73,34 @@ public struct CalendarArithmetic: Sendable {
     }
 
     /// Returns a relative month without imposing an application date range.
+    ///
+    /// A single step (`offset` of 1 or -1) crosses to the adjacent month via `month`'s own
+    /// interval boundary rather than adding a calendar month to day 1. For most months these
+    /// agree, but a month whose era began mid-month (see the type documentation) starts after day
+    /// 1 of its underlying Gregorian month — adding or subtracting a whole calendar month from
+    /// that day 1 lands on the *other* era's segment of the same Gregorian month, skipping the
+    /// adjacent split segment entirely. Larger offsets keep the calendar-month arithmetic: they
+    /// only need to land in the right neighborhood, and boundary-walking every step would turn a
+    /// bulk lookup (a scrolling calendar can realize thousands of offsets from one anchor) into
+    /// O(offset) work instead of O(1).
     public func month(offset: Int, from month: MonthIdentifier) -> MonthIdentifier? {
-        guard let start = start(of: month),
-            let date = calendar.date(byAdding: .month, value: offset, to: start)
-        else { return nil }
-        return self.month(containing: date)
+        switch offset {
+        case 0:
+            return month
+        case 1:
+            guard let end = interval(of: month)?.end else { return nil }
+            return self.month(containing: end)
+        case -1:
+            guard let start = start(of: month),
+                let dayBefore = calendar.date(byAdding: .day, value: -1, to: start)
+            else { return nil }
+            return self.month(containing: dayBefore)
+        default:
+            guard let start = start(of: month),
+                let date = calendar.date(byAdding: .month, value: offset, to: start)
+            else { return nil }
+            return self.month(containing: date)
+        }
     }
 
     /// Lists months in a positive year within the era containing the reference date.
