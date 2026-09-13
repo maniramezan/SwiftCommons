@@ -124,10 +124,6 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - Test support (separate product): `Sources/SwiftCommonsTestSupport/`
 - Tests: `Tests/SwiftCommonsTests/`
 
-## Planning
-
-- Use `Plan.md` for task planning and progress tracking when the work is non-trivial.
-
 ## When Updating
 
 - Add or update tests under `Tests/SwiftCommonsTests` for behavior changes.
