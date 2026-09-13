@@ -47,4 +47,38 @@ struct NumberFormatterExtensionsTests {
         #expect(usd == "$1.00")
         #expect(eur.contains("€"))
     }
+
+    @Test
+    func decimalsRespectPrecisionGroupingAndLocale() {
+        let us = Locale(identifier: "en_US")
+        #expect(
+            NumberFormatter.formatDecimal(1234.567, fractionDigits: 2...2, locale: us) == "1,234.57"
+        )
+        #expect(
+            NumberFormatter.formatDecimal(
+                1234.5, fractionDigits: 2...2,
+                usesGroupingSeparator: false, locale: us) == "1234.50")
+        #expect(
+            NumberFormatter.formatDecimal(1234.5, fractionDigits: 0...3, locale: us) == "1,234.5")
+        #expect(
+            NumberFormatter.formatDecimal(
+                -1234.5, fractionDigits: 2...2,
+                locale: Locale(identifier: "de_DE")) == "-1.234,50")
+        let precise = Decimal(string: "9007199254740993.25")!
+        #expect(
+            NumberFormatter.formatDecimal(
+                precise, fractionDigits: 2...2,
+                usesGroupingSeparator: false, locale: us) == "9007199254740993.25")
+    }
+
+    @Test
+    func percentagesUseRatiosAndIndependentPrecision() {
+        let us = Locale(identifier: "en_US")
+        #expect(NumberFormatter.formatPercent(0.125, fractionDigits: 1...1, locale: us) == "12.5%")
+        #expect(NumberFormatter.formatPercent(1, locale: us) == "100%")
+        #expect(NumberFormatter.formatPercent(0, locale: us) == "0%")
+        #expect(NumberFormatter.formatPercent(-0.25, locale: us) == "-25%")
+        #expect(NumberFormatter.formatDecimal(0.125, locale: us) == "0.125")
+    }
+
 }

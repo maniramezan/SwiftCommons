@@ -2,13 +2,14 @@ import Foundation
 
 /// A process-wide, thread-local cache for `Formatter` instances.
 ///
-/// `Formatter` subclasses (`DateFormatter`, `NumberFormatter`, `MeasurementFormatter`, and the
-/// rest of the Foundation formatter family) are not thread-safe, and configuring one —
-/// resolving a locale or calendar, or a localized template via
-/// `DateFormatter.setLocalizedDateFormatFromTemplate(_:)` — is expensive enough to show up as
-/// jank when done freshly on a hot path such as SwiftUI view rendering. Caching one instance per
-/// (formatter type, cache key, thread) turns repeat calls into a dictionary lookup, and per-thread
-/// storage keeps the non-thread-safe instances safe without locking.
+/// Configuring Foundation formatters can be expensive. Caching one instance per
+/// (formatter type, cache key, thread) avoids repeated configuration and keeps each thread's
+/// mutable formatter state separate.
+///
+/// Treat returned instances as read-only. Use them synchronously on the calling thread;
+/// do not retain them across suspension points or pass them to another thread or task.
+/// Entries remain cached for the lifetime of their thread, so prefer a bounded set of
+/// configuration keys rather than keys derived from individual values being formatted.
 ///
 ///     extension NumberFormatter {
 ///         static func formatDistance(_ value: Double, locale: Locale) -> String {
@@ -34,7 +35,7 @@ public enum FormatterCache {
     ///   - key: A string uniquely identifying this formatter's configuration.
     ///   - make: Builds and configures a new formatter on a cache miss. Not called on a hit.
     public static func formatter<F: Formatter>(for key: String, make: () -> F) -> F {
-        let storageKey = "com.swiftcommons.formattercache.\(F.self)|\(key)"
+        let storageKey = "com.swiftcommons.formattercache.\(ObjectIdentifier(F.self))|\(key)"
         let threadCache = Thread.current.threadDictionary
 
         if let cached = threadCache[storageKey] as? F {

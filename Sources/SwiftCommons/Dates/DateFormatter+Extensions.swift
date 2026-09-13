@@ -1,7 +1,7 @@
 import Foundation
 
 extension DateFormatter {
-    /// Common date format templates used by SwiftCommons.
+    /// Common literal date format patterns used by SwiftCommons.
     public enum FormatType: String, Sendable {
         /// "MMMM dd, yyyy" format (e.g., "January 30, 2026").
         // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -16,7 +16,7 @@ extension DateFormatter {
 
     /// Returns a cached date formatter for the given type, locale, and time zone.
     /// - Parameters:
-    ///   - formatterType: The date format template to use.
+    ///   - formatterType: The literal date format pattern to use.
     ///   - locale: The locale to apply.
     ///   - timeZone: The time zone to apply.
     public static func formatter(
@@ -56,11 +56,11 @@ extension DateFormatter {
             locale ?? calendar.locale ?? Locale(calendarIdentifier: calendar.identifier)
         return FormatterCache.formatter(
             for:
-                "pattern|\(dateFormat)|\(calendar.identifier)|\(resolvedLocale.identifier)|\(calendar.timeZone.identifier)"
+                "pattern|\(dateFormat)|\(calendar.identifier)|\(resolvedLocale.identifier)|\(calendar.timeZone.identifier)|\(calendar.firstWeekday)|\(calendar.minimumDaysInFirstWeek)"
         ) {
             let formatter = DateFormatter()
-            formatter.calendar = calendar
             formatter.locale = resolvedLocale
+            formatter.calendar = calendar
             formatter.timeZone = calendar.timeZone
             formatter.dateFormat = dateFormat
             return formatter
@@ -90,14 +90,46 @@ extension DateFormatter {
             locale ?? calendar.locale ?? Locale(calendarIdentifier: calendar.identifier)
         return FormatterCache.formatter(
             for:
-                "template|\(template)|\(calendar.identifier)|\(resolvedLocale.identifier)|\(calendar.timeZone.identifier)"
+                "template|\(template)|\(calendar.identifier)|\(resolvedLocale.identifier)|\(calendar.timeZone.identifier)|\(calendar.firstWeekday)|\(calendar.minimumDaysInFirstWeek)"
         ) {
             let formatter = DateFormatter()
-            formatter.calendar = calendar
             formatter.locale = resolvedLocale
+            formatter.calendar = calendar
             formatter.timeZone = calendar.timeZone
             formatter.setLocalizedDateFormatFromTemplate(template)
             return formatter
         }
     }
+
+    /// Returns a cached formatter for localized date and time styles.
+    ///
+    /// Use `.none` for either style to display only the other component. Treat the returned
+    /// formatter as read-only and use it synchronously on the calling thread.
+    /// - Parameters:
+    ///   - dateStyle: The localized date detail level. Defaults to `.medium`.
+    ///   - timeStyle: The localized time detail level. Defaults to `.none`.
+    ///   - calendar: The calendar and time zone to use. Defaults to `.current`.
+    ///   - locale: The display locale; defaults to the calendar's locale or calendar identifier.
+    public static func formatter(
+        dateStyle: Style = .medium,
+        timeStyle: Style = .none,
+        calendar: Calendar = .current,
+        locale: Locale? = nil
+    ) -> DateFormatter {
+        let resolvedLocale =
+            locale ?? calendar.locale ?? Locale(calendarIdentifier: calendar.identifier)
+        return FormatterCache.formatter(
+            for:
+                "style|\(dateStyle.rawValue)|\(timeStyle.rawValue)|\(calendar.identifier)|\(resolvedLocale.identifier)|\(calendar.timeZone.identifier)|\(calendar.firstWeekday)|\(calendar.minimumDaysInFirstWeek)"
+        ) {
+            let formatter = DateFormatter()
+            formatter.locale = resolvedLocale
+            formatter.calendar = calendar
+            formatter.timeZone = calendar.timeZone
+            formatter.dateStyle = dateStyle
+            formatter.timeStyle = timeStyle
+            return formatter
+        }
+    }
+
 }

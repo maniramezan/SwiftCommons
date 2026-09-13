@@ -34,19 +34,11 @@ extension Date {
         unitsStyle: RelativeDateTimeFormatter.UnitsStyle,
         locale: Locale
     ) -> RelativeDateTimeFormatter {
-        let cacheKey =
-            "com.swiftcommons.relativedatetimeformatter.\(unitsStyle)|\(locale.identifier)"
-        let threadCache = Thread.current.threadDictionary
-
-        if let cached = threadCache[cacheKey] as? RelativeDateTimeFormatter {
-            return cached
+        FormatterCache.formatter(for: "relative|\(unitsStyle.rawValue)|\(locale.identifier)") {
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = unitsStyle
+            formatter.locale = locale
+            return formatter
         }
-
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = unitsStyle
-        formatter.locale = locale
-        threadCache[cacheKey] = formatter
-
-        return formatter
     }
 }

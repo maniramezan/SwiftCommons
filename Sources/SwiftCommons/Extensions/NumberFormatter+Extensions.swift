@@ -5,11 +5,16 @@ extension NumberFormatter {
     private static let logger: Logger = .swiftCommonsLogger(for: NumberFormatter.self)
 
     /// Returns a thread-local cached `NumberFormatter` for the given locale.
-    private static func cachedFormatter(locale: Locale, purpose: String) -> NumberFormatter {
+    private static func cachedFormatter(
+        locale: Locale, purpose: String, style: Style = .none, currencyCode: String? = nil
+    ) -> NumberFormatter {
         FormatterCache.formatter(for: "\(purpose)|\(locale.identifier)") {
             let formatter = NumberFormatter()
-            formatter.numberStyle = .none
             formatter.locale = locale
+            formatter.numberStyle = style
+            if let currencyCode {
+                formatter.currencyCode = currencyCode
+            }
             return formatter
         }
     }
@@ -59,15 +64,69 @@ extension NumberFormatter {
         currencyCode: String? = nil,
         locale: Locale = .current
     ) -> String {
-        let formatter = cachedFormatter(locale: locale, purpose: "currency|\(currencyCode ?? "")")
-        formatter.numberStyle = .currency
-        if let currencyCode {
-            formatter.currencyCode = currencyCode
-        }
+        let formatter = cachedFormatter(
+            locale: locale, purpose: "currency|\(currencyCode ?? "")",
+            style: .currency, currencyCode: currencyCode
+        )
         guard let formatted = formatter.string(from: amount as NSDecimalNumber) else {
             logger.errorPublic("Failed to format currency amount")
             return String(describing: amount)
         }
         return formatted
     }
+
+    /// Formats a decimal number with localized separators and optional grouping.
+    /// - Parameters:
+    ///   - value: The number to format without converting it to binary floating point.
+    ///   - fractionDigits: The inclusive range of displayed fraction digits; must be nonnegative.
+    ///   - usesGroupingSeparator: Whether to group digits, such as `1,234` in US English.
+    ///   - locale: The display locale. Defaults to `.current`.
+    /// - Returns: The formatted number, or its plain numeric value if formatting fails.
+    public static func formatDecimal(
+        _ value: Decimal,
+        fractionDigits: ClosedRange<Int> = 0...3,
+        usesGroupingSeparator: Bool = true,
+        locale: Locale = .current
+    ) -> String {
+        formatNumber(
+            value, style: .decimal, fractionDigits: fractionDigits,
+            usesGroupingSeparator: usesGroupingSeparator, locale: locale)
+    }
+
+    /// Formats a ratio as a localized percentage (`0.25` becomes `25%` in US English).
+    /// - Parameters:
+    ///   - value: The ratio to format; `1` represents 100 percent.
+    ///   - fractionDigits: The inclusive range of displayed fraction digits; must be nonnegative.
+    ///   - locale: The display locale. Defaults to `.current`.
+    /// - Returns: The formatted percentage, or the plain ratio if formatting fails.
+    public static func formatPercent(
+        _ value: Decimal,
+        fractionDigits: ClosedRange<Int> = 0...0,
+        locale: Locale = .current
+    ) -> String {
+        formatNumber(
+            value, style: .percent, fractionDigits: fractionDigits,
+            usesGroupingSeparator: true, locale: locale)
+    }
+
+    private static func formatNumber(
+        _ value: Decimal, style: Style, fractionDigits: ClosedRange<Int>,
+        usesGroupingSeparator: Bool, locale: Locale
+    ) -> String {
+        precondition(fractionDigits.lowerBound >= 0, "Fraction digits must be nonnegative")
+        let formatter: NumberFormatter = FormatterCache.formatter(
+            for:
+                "number|\(style.rawValue)|\(fractionDigits.lowerBound)|\(fractionDigits.upperBound)|\(usesGroupingSeparator)|\(locale.identifier)"
+        ) {
+            let formatter = NumberFormatter()
+            formatter.locale = locale
+            formatter.numberStyle = style
+            formatter.minimumFractionDigits = fractionDigits.lowerBound
+            formatter.maximumFractionDigits = fractionDigits.upperBound
+            formatter.usesGroupingSeparator = usesGroupingSeparator
+            return formatter
+        }
+        return formatter.string(from: value as NSDecimalNumber) ?? String(describing: value)
+    }
+
 }

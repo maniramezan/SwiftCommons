@@ -47,4 +47,21 @@ struct FormatterCacheTests {
         #expect(type(of: numberFormatter) == NumberFormatter.self)
         #expect(type(of: dateFormatter) == DateFormatter.self)
     }
+
+    @Test
+    func separateThreadsHaveSeparateInstances() {
+        let key = "test.thread.\(UUID().uuidString)"
+        let formatter: NumberFormatter = FormatterCache.formatter(for: key) { NumberFormatter() }
+        let identity = ObjectIdentifier(formatter)
+        let finished = DispatchSemaphore(value: 0)
+        Thread.detachNewThread {
+            let other: NumberFormatter = FormatterCache.formatter(for: key) { NumberFormatter() }
+            #expect(ObjectIdentifier(other) != identity)
+            #expect(other === FormatterCache.formatter(for: key) { NumberFormatter() })
+            finished.signal()
+        }
+        #expect(finished.wait(timeout: .now() + 5) == .success)
+        withExtendedLifetime(formatter) {}
+    }
+
 }
