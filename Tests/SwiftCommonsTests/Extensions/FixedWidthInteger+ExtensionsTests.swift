@@ -18,10 +18,11 @@ struct FixedWidthIntegerExtensionsTests {
     }
 
     @Test
-    func digitsAreSafeForExtremeValues() {
+    func digitsAreSafeForExtremeValues() throws {
         // `Int.min` cannot be negated; the implementation must not crash.
         #expect(Int.min.digits.count == String(Int.min).count - 1)  // minus the "-"
         // Unsigned values larger than `Int.max` must still work.
-        #expect(UInt64.max.digits == String(UInt64.max).reversed().map { Int(String($0))! })
+        let expectedDigits = try String(UInt64.max).reversed().map { try #require(Int(String($0))) }
+        #expect(UInt64.max.digits == expectedDigits)
     }
 }
