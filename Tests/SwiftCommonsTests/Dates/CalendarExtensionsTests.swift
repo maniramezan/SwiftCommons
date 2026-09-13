@@ -7,7 +7,7 @@ import Testing
 struct CalendarExtensionsTests {
     private var calendar: Calendar {
         var gregorianCalendar = Calendar(identifier: .gregorian)
-        gregorianCalendar.timeZone = TimeZone(identifier: "UTC")!
+        gregorianCalendar.timeZone = .gmt
         gregorianCalendar.locale = Locale(identifier: "en_US")
         gregorianCalendar.firstWeekday = 1  // Sunday
         return gregorianCalendar

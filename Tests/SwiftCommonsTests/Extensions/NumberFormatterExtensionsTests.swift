@@ -49,7 +49,7 @@ struct NumberFormatterExtensionsTests {
     }
 
     @Test
-    func decimalsRespectPrecisionGroupingAndLocale() {
+    func decimalsRespectPrecisionGroupingAndLocale() throws {
         let usLocale = Locale(identifier: "en_US")
         #expect(
             NumberFormatter.formatDecimal(1234.567, fractionDigits: 2...2, locale: usLocale)
@@ -66,7 +66,7 @@ struct NumberFormatterExtensionsTests {
             NumberFormatter.formatDecimal(
                 -1234.5, fractionDigits: 2...2,
                 locale: Locale(identifier: "de_DE")) == "-1.234,50")
-        let precise = Decimal(string: "9007199254740993.25")!
+        let precise = try #require(Decimal(string: "9007199254740993.25"))
         #expect(
             NumberFormatter.formatDecimal(
                 precise, fractionDigits: 2...2,

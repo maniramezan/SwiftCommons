@@ -32,7 +32,7 @@ struct DateFormatterTests {
         let formatter = DateFormatter.formatter(
             .MMddyyyy,
             locale: Locale(identifier: "en_US"),
-            timeZone: TimeZone(identifier: "UTC")!
+            timeZone: .gmt
         )
         // Jan 15, 2024 00:00 UTC
         let date = Date(timeIntervalSince1970: 1_705_276_800)
@@ -78,16 +78,16 @@ struct DateFormatterTests {
     }
 
     @Test
-    func weekRulesHaveSeparateCacheEntries() {
+    func weekRulesHaveSeparateCacheEntries() throws {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = .gmt
         calendar.locale = Locale(identifier: "en_US_POSIX")
         calendar.firstWeekday = 1
         calendar.minimumDaysInFirstWeek = 1
         var isoWeeks = calendar
         isoWeeks.firstWeekday = 2
         isoWeeks.minimumDaysInFirstWeek = 4
-        let date = calendar.date(from: DateComponents(year: 2021, month: 1, day: 1))!
+        let date = try #require(calendar.date(from: DateComponents(year: 2021, month: 1, day: 1)))
         let first = DateFormatter.formatter(dateFormat: "YYYY-ww", calendar: calendar)
         let second = DateFormatter.formatter(dateFormat: "YYYY-ww", calendar: isoWeeks)
         #expect(first !== second)
@@ -108,7 +108,7 @@ struct DateFormatterTests {
     @Test
     func localizedStylesMatchFoundationAndCacheConfiguration() {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = .gmt
         for identifier in ["en_US", "de_DE", "fa_IR"] {
             let locale = Locale(identifier: identifier)
             let expected = DateFormatter()
