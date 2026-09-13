@@ -40,12 +40,12 @@ struct NumberFormatterExtensionsTests {
 
     @Test
     func formatCurrencyWithDifferentCurrencyCodesDoesNotShareCache() {
-        let usd = NumberFormatter.formatCurrency(
+        let dollarAmount = NumberFormatter.formatCurrency(
             1, currencyCode: "USD", locale: Locale(identifier: "en_US"))
-        let eur = NumberFormatter.formatCurrency(
+        let euroAmount = NumberFormatter.formatCurrency(
             1, currencyCode: "EUR", locale: Locale(identifier: "en_US"))
-        #expect(usd == "$1.00")
-        #expect(eur.contains("€"))
+        #expect(dollarAmount == "$1.00")
+        #expect(euroAmount.contains("€"))
     }
 
     @Test
