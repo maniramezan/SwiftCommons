@@ -1,6 +1,17 @@
 import Foundation
 
 extension DateFormatter {
+    /// Cache key for the built-in `DateFormatter` caching helpers below.
+    enum CacheKey: Hashable {
+        enum Format: Hashable {
+            case pattern(String)
+            case template(String)
+            case styles(DateFormatter.Style, DateFormatter.Style)
+        }
+
+        case date(format: Format, calendar: Calendar?, locale: Locale, timeZone: TimeZone)
+    }
+
     /// Common literal date format patterns used by SwiftCommons.
     public enum FormatType: String, Sendable {
         /// "MMMM dd, yyyy" format (e.g., "January 30, 2026").
@@ -25,7 +36,7 @@ extension DateFormatter {
         timeZone: TimeZone = TimeZone.current
     ) -> DateFormatter {
         FormatterCache.formatter(
-            for: FormatterCache.Key.date(
+            for: DateFormatter.CacheKey.date(
                 format: .pattern(formatterType.rawValue), calendar: nil,
                 locale: locale, timeZone: timeZone)
         ) {
@@ -57,7 +68,7 @@ extension DateFormatter {
         let resolvedLocale =
             locale ?? calendar.locale ?? Locale(calendarIdentifier: calendar.identifier)
         return FormatterCache.formatter(
-            for: FormatterCache.Key.date(
+            for: DateFormatter.CacheKey.date(
                 format: .pattern(dateFormat), calendar: calendar,
                 locale: resolvedLocale, timeZone: calendar.timeZone)
         ) {
@@ -92,7 +103,7 @@ extension DateFormatter {
         let resolvedLocale =
             locale ?? calendar.locale ?? Locale(calendarIdentifier: calendar.identifier)
         return FormatterCache.formatter(
-            for: FormatterCache.Key.date(
+            for: DateFormatter.CacheKey.date(
                 format: .template(template), calendar: calendar,
                 locale: resolvedLocale, timeZone: calendar.timeZone)
         ) {
@@ -123,7 +134,7 @@ extension DateFormatter {
         let resolvedLocale =
             locale ?? calendar.locale ?? Locale(calendarIdentifier: calendar.identifier)
         return FormatterCache.formatter(
-            for: FormatterCache.Key.date(
+            for: DateFormatter.CacheKey.date(
                 format: .styles(dateStyle, timeStyle), calendar: calendar,
                 locale: resolvedLocale, timeZone: calendar.timeZone)
         ) {

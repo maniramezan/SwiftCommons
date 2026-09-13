@@ -2,6 +2,26 @@ import Foundation
 import OSLog
 
 extension NumberFormatter {
+    /// Cache key for the built-in `NumberFormatter` caching helpers below.
+    struct CacheKey: Hashable {
+        let locale: Locale
+        let style: Style
+        let currencyCode: String?
+        let fractionDigits: ClosedRange<Int>?
+        let usesGroupingSeparator: Bool?
+
+        init(
+            locale: Locale, style: Style, currencyCode: String? = nil,
+            fractionDigits: ClosedRange<Int>? = nil, usesGroupingSeparator: Bool? = nil
+        ) {
+            self.locale = locale
+            self.style = style
+            self.currencyCode = currencyCode
+            self.fractionDigits = fractionDigits
+            self.usesGroupingSeparator = usesGroupingSeparator
+        }
+    }
+
     private static let logger: Logger = .swiftCommonsLogger(for: NumberFormatter.self)
 
     /// Returns a thread-local cached `NumberFormatter` for the given locale.
@@ -9,7 +29,7 @@ extension NumberFormatter {
         locale: Locale, style: Style = .none, currencyCode: String? = nil
     ) -> NumberFormatter {
         FormatterCache.formatter(
-            for: FormatterCache.Key.number(locale: locale, style: style, currencyCode: currencyCode)
+            for: CacheKey(locale: locale, style: style, currencyCode: currencyCode)
         ) {
             let formatter = NumberFormatter()
             formatter.locale = locale
@@ -117,7 +137,7 @@ extension NumberFormatter {
     ) -> String {
         precondition(fractionDigits.lowerBound >= 0, "Fraction digits must be nonnegative")
         let formatter: NumberFormatter = FormatterCache.formatter(
-            for: FormatterCache.Key.number(
+            for: CacheKey(
                 locale: locale, style: style, fractionDigits: fractionDigits,
                 usesGroupingSeparator: usesGroupingSeparator)
         ) {

@@ -23,24 +23,6 @@ import Foundation
 ///         return formatter
 ///     }
 public enum FormatterCache {
-    /// Typed configurations for the built-in helpers. Associated values are the cache key;
-    /// synthesized hashing and equality keep every field and formatter kind distinct.
-    enum Key: Hashable {
-        enum DateFormat: Hashable {
-            case pattern(String)
-            case template(String)
-            case styles(DateFormatter.Style, DateFormatter.Style)
-        }
-
-        case date(format: DateFormat, calendar: Calendar?, locale: Locale, timeZone: TimeZone)
-        case number(
-            locale: Locale, style: NumberFormatter.Style, currencyCode: String? = nil,
-            fractionDigits: ClosedRange<Int>? = nil, usesGroupingSeparator: Bool? = nil
-        )
-        case relative(unitsStyle: RelativeDateTimeFormatter.UnitsStyle, locale: Locale)
-        case measurement(unitStyle: Formatter.UnitStyle, unitOptions: UInt, locale: Locale)
-    }
-
     private struct EntryKey: Hashable {
         let formatterType: ObjectIdentifier
         let keyType: ObjectIdentifier

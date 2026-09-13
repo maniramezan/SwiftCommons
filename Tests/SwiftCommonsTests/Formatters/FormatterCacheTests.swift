@@ -106,9 +106,9 @@ struct FormatterCacheTests {
     func builtInDateKindsHaveDistinctKeys() {
         let locale = Locale(identifier: "en_US")
         let timeZone = TimeZone(secondsFromGMT: 0)!
-        let pattern = FormatterCache.Key.date(
+        let pattern = DateFormatter.CacheKey.date(
             format: .pattern("yMMMMd"), calendar: nil, locale: locale, timeZone: timeZone)
-        let template = FormatterCache.Key.date(
+        let template = DateFormatter.CacheKey.date(
             format: .template("yMMMMd"), calendar: nil, locale: locale, timeZone: timeZone)
         let first: DateFormatter = FormatterCache.formatter(for: pattern) { DateFormatter() }
         let second: DateFormatter = FormatterCache.formatter(for: template) { DateFormatter() }

@@ -1,6 +1,13 @@
 import Foundation
 
 extension MeasurementFormatter {
+    /// Cache key for the built-in `MeasurementFormatter` caching helper below.
+    struct CacheKey: Hashable {
+        let unitStyle: UnitStyle
+        let unitOptions: UInt
+        let locale: Locale
+    }
+
     /// Returns a cached measurement formatter for the given unit style, options, and locale.
     ///
     /// Demonstrates ``FormatterCache`` generalizing beyond `DateFormatter`/`NumberFormatter` —
@@ -11,7 +18,7 @@ extension MeasurementFormatter {
         locale: Locale = .current
     ) -> MeasurementFormatter {
         FormatterCache.formatter(
-            for: FormatterCache.Key.measurement(
+            for: CacheKey(
                 unitStyle: unitStyle, unitOptions: unitOptions.rawValue, locale: locale)
         ) {
             let formatter = MeasurementFormatter()
