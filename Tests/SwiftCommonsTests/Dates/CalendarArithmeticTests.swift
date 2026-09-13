@@ -69,6 +69,41 @@ struct CalendarArithmeticTests {
         #expect(japanese.months(in: 1, relativeTo: try date(2019, 5, 1)).first == may)
     }
 
+    @Test func eraStartingMidMonthSplitsMonth() throws {
+        let tokyo = try #require(TimeZone(identifier: "Asia/Tokyo"))
+        var japanese = Calendar(identifier: .japanese)
+        japanese.timeZone = tokyo
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = tokyo
+        let arithmetic = CalendarArithmetic(calendar: japanese)
+        func date(_ month: Int, _ day: Int) throws -> Date {
+            try #require(gregorian.date(from: DateComponents(year: 1989, month: month, day: day)))
+        }
+        let january1 = try date(1, 1)
+        let january7 = try date(1, 7)
+        let january8 = try date(1, 8)
+        let february1 = try date(2, 1)
+        let june1 = try date(6, 1)
+        let showa = MonthIdentifier(month: 1, year: 64, calendarIdentifier: .japanese, era: 234)
+        let heisei = MonthIdentifier(month: 1, year: 1, calendarIdentifier: .japanese, era: 235)
+
+        #expect(arithmetic.month(containing: january7) == showa)
+        #expect(arithmetic.month(containing: january8) == heisei)
+        #expect(arithmetic.start(of: showa) == january1)
+        #expect(arithmetic.start(of: heisei) == january8)
+        #expect(arithmetic.interval(of: showa) == DateInterval(start: january1, end: january8))
+        #expect(arithmetic.interval(of: heisei) == DateInterval(start: january8, end: february1))
+        #expect(arithmetic.date(day: 7, in: showa) == january7)
+        #expect(arithmetic.date(day: 8, in: showa) == nil)
+        #expect(arithmetic.date(day: 7, in: heisei) == nil)
+        #expect(arithmetic.date(day: 8, in: heisei) == january8)
+
+        let heiseiMonths = arithmetic.months(in: 1, relativeTo: june1)
+        #expect(heiseiMonths.first == heisei)
+        #expect(heiseiMonths.count == 12)
+        #expect(arithmetic.months(in: 64, relativeTo: january7) == [showa])
+    }
+
     @Test func hebrewYearBoundaryPreservesThirteenthMonth() throws {
         let calendar = calendar(.hebrew)
         let arithmetic = CalendarArithmetic(calendar: calendar)
