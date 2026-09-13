@@ -11,7 +11,8 @@ extension MeasurementFormatter {
         locale: Locale = .current
     ) -> MeasurementFormatter {
         FormatterCache.formatter(
-            for: "\(unitStyle.rawValue)|\(unitOptions.rawValue)|\(locale.identifier)"
+            for: FormatterCache.Key.measurement(
+                unitStyle: unitStyle, unitOptions: unitOptions.rawValue, locale: locale)
         ) {
             let formatter = MeasurementFormatter()
             formatter.unitStyle = unitStyle

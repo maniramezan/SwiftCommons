@@ -25,7 +25,9 @@ extension DateFormatter {
         timeZone: TimeZone = TimeZone.current
     ) -> DateFormatter {
         FormatterCache.formatter(
-            for: "pattern|\(formatterType.rawValue)|\(locale.identifier)|\(timeZone.identifier)"
+            for: FormatterCache.Key.date(
+                format: .pattern(formatterType.rawValue), calendar: nil,
+                locale: locale, timeZone: timeZone)
         ) {
             let formatter = DateFormatter()
             formatter.timeZone = timeZone
@@ -55,8 +57,9 @@ extension DateFormatter {
         let resolvedLocale =
             locale ?? calendar.locale ?? Locale(calendarIdentifier: calendar.identifier)
         return FormatterCache.formatter(
-            for:
-                "pattern|\(dateFormat)|\(calendar.identifier)|\(resolvedLocale.identifier)|\(calendar.timeZone.identifier)|\(calendar.firstWeekday)|\(calendar.minimumDaysInFirstWeek)"
+            for: FormatterCache.Key.date(
+                format: .pattern(dateFormat), calendar: calendar,
+                locale: resolvedLocale, timeZone: calendar.timeZone)
         ) {
             let formatter = DateFormatter()
             formatter.locale = resolvedLocale
@@ -89,8 +92,9 @@ extension DateFormatter {
         let resolvedLocale =
             locale ?? calendar.locale ?? Locale(calendarIdentifier: calendar.identifier)
         return FormatterCache.formatter(
-            for:
-                "template|\(template)|\(calendar.identifier)|\(resolvedLocale.identifier)|\(calendar.timeZone.identifier)|\(calendar.firstWeekday)|\(calendar.minimumDaysInFirstWeek)"
+            for: FormatterCache.Key.date(
+                format: .template(template), calendar: calendar,
+                locale: resolvedLocale, timeZone: calendar.timeZone)
         ) {
             let formatter = DateFormatter()
             formatter.locale = resolvedLocale
@@ -119,8 +123,9 @@ extension DateFormatter {
         let resolvedLocale =
             locale ?? calendar.locale ?? Locale(calendarIdentifier: calendar.identifier)
         return FormatterCache.formatter(
-            for:
-                "style|\(dateStyle.rawValue)|\(timeStyle.rawValue)|\(calendar.identifier)|\(resolvedLocale.identifier)|\(calendar.timeZone.identifier)|\(calendar.firstWeekday)|\(calendar.minimumDaysInFirstWeek)"
+            for: FormatterCache.Key.date(
+                format: .styles(dateStyle, timeStyle), calendar: calendar,
+                locale: resolvedLocale, timeZone: calendar.timeZone)
         ) {
             let formatter = DateFormatter()
             formatter.locale = resolvedLocale

@@ -34,7 +34,9 @@ extension Date {
         unitsStyle: RelativeDateTimeFormatter.UnitsStyle,
         locale: Locale
     ) -> RelativeDateTimeFormatter {
-        FormatterCache.formatter(for: "relative|\(unitsStyle.rawValue)|\(locale.identifier)") {
+        FormatterCache.formatter(
+            for: FormatterCache.Key.relative(unitsStyle: unitsStyle, locale: locale)
+        ) {
             let formatter = RelativeDateTimeFormatter()
             formatter.unitsStyle = unitsStyle
             formatter.locale = locale

@@ -11,39 +11,75 @@ import Foundation
 /// Entries remain cached for the lifetime of their thread, so prefer a bounded set of
 /// configuration keys rather than keys derived from individual values being formatted.
 ///
-///     extension NumberFormatter {
-///         static func formatDistance(_ value: Double, locale: Locale) -> String {
-///             let formatter = FormatterCache.formatter(for: "distance|\(locale.identifier)") {
-///                 let formatter = NumberFormatter()
-///                 formatter.locale = locale
-///                 formatter.numberStyle = .decimal
-///                 return formatter
-///             }
-///             return formatter.string(from: value as NSNumber) ?? String(value)
-///         }
+///     struct NumberKey: Hashable {
+///         let locale: Locale
+///     }
+///     let formatter: NumberFormatter = FormatterCache.formatter(
+///         for: NumberKey(locale: .current)
+///     ) {
+///         let formatter = NumberFormatter()
+///         formatter.locale = .current
+///         formatter.numberStyle = .decimal
+///         return formatter
 ///     }
 public enum FormatterCache {
-    /// Returns the cached formatter for `key`, creating and configuring it via `make` on a miss.
-    ///
-    /// `key` should encode every input that affects the formatter's configuration (locale,
-    /// calendar, time zone, format pattern, and so on) — two calls with the same key but
-    /// different `make` closures return whichever formatter was cached first. The formatter
-    /// type itself is folded into the underlying storage key, so distinct formatter types never
-    /// collide even when given the same `key` string.
-    ///
-    /// - Parameters:
-    ///   - key: A string uniquely identifying this formatter's configuration.
-    ///   - make: Builds and configures a new formatter on a cache miss. Not called on a hit.
-    public static func formatter<F: Formatter>(for key: String, make: () -> F) -> F {
-        let storageKey = "com.swiftcommons.formattercache.\(ObjectIdentifier(F.self))|\(key)"
-        let threadCache = Thread.current.threadDictionary
-
-        if let cached = threadCache[storageKey] as? F {
-            return cached
+    /// Typed configurations for the built-in helpers. Associated values are the cache key;
+    /// synthesized hashing and equality keep every field and formatter kind distinct.
+    enum Key: Hashable {
+        enum DateFormat: Hashable {
+            case pattern(String)
+            case template(String)
+            case styles(DateFormatter.Style, DateFormatter.Style)
         }
 
+        case date(format: DateFormat, calendar: Calendar?, locale: Locale, timeZone: TimeZone)
+        case number(
+            locale: Locale, style: NumberFormatter.Style, currencyCode: String? = nil,
+            fractionDigits: ClosedRange<Int>? = nil, usesGroupingSeparator: Bool? = nil
+        )
+        case relative(unitsStyle: RelativeDateTimeFormatter.UnitsStyle, locale: Locale)
+        case measurement(unitStyle: Formatter.UnitStyle, unitOptions: UInt, locale: Locale)
+    }
+
+    private struct EntryKey: Hashable {
+        let formatterType: ObjectIdentifier
+        let keyType: ObjectIdentifier
+        let configuration: AnyHashable
+    }
+
+    private final class Storage {
+        var formatters: [EntryKey: Formatter] = [:]
+    }
+
+    /// Returns the thread-local formatter for a hashable configuration, creating it on a miss.
+    ///
+    /// Include every configuration input in `key`. Prefer a dedicated `Hashable` struct or enum;
+    /// strings remain supported. Formatter and key types have independent namespaces, so
+    /// unrelated key types cannot collide even when their erased values compare equal.
+    /// Equal keys return the first configured instance; `make` is not called on cache hits.
+    /// - Parameters:
+    ///   - key: An immutable value identifying the complete formatter configuration.
+    ///   - make: Builds and configures a new formatter on a cache miss.
+    public static func formatter<Key: Hashable, F: Formatter>(for key: Key, make: () -> F) -> F {
+        let threadDictionary = Thread.current.threadDictionary
+        let storageKey = "com.swiftcommons.formattercache.storage"
+        let storage: Storage
+        if let cached = threadDictionary[storageKey] as? Storage {
+            storage = cached
+        } else {
+            storage = Storage()
+            threadDictionary[storageKey] = storage
+        }
+        let entryKey = EntryKey(
+            formatterType: ObjectIdentifier(F.self),
+            keyType: ObjectIdentifier(Key.self),
+            configuration: AnyHashable(key)
+        )
+        if let cached = storage.formatters[entryKey] as? F {
+            return cached
+        }
         let formatter = make()
-        threadCache[storageKey] = formatter
+        storage.formatters[entryKey] = formatter
         return formatter
     }
 }

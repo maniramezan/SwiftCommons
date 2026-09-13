@@ -6,9 +6,11 @@ extension NumberFormatter {
 
     /// Returns a thread-local cached `NumberFormatter` for the given locale.
     private static func cachedFormatter(
-        locale: Locale, purpose: String, style: Style = .none, currencyCode: String? = nil
+        locale: Locale, style: Style = .none, currencyCode: String? = nil
     ) -> NumberFormatter {
-        FormatterCache.formatter(for: "\(purpose)|\(locale.identifier)") {
+        FormatterCache.formatter(
+            for: FormatterCache.Key.number(locale: locale, style: style, currencyCode: currencyCode)
+        ) {
             let formatter = NumberFormatter()
             formatter.locale = locale
             formatter.numberStyle = style
@@ -25,7 +27,7 @@ extension NumberFormatter {
     /// ``Foundation/Locale/withNumberingSystemIdentifier(_:)`` to request a
     /// specific numbering system (e.g. Eastern Arabic-Indic digits).
     public static func formatYear(_ year: Int, locale: Locale = .current) -> String {
-        let formatter = cachedFormatter(locale: locale, purpose: "year")
+        let formatter = cachedFormatter(locale: locale)
         guard let formattedYear = formatter.string(from: year as NSNumber) else {
             logger.errorPublic("Failed to format year: \(year)")
             return String(year)
@@ -39,7 +41,7 @@ extension NumberFormatter {
     /// ``Foundation/Locale/withNumberingSystemIdentifier(_:)`` to request a
     /// specific numbering system (e.g. Eastern Arabic-Indic digits).
     public static func formatDay(_ value: Int, locale: Locale = .current) -> String {
-        let formatter = cachedFormatter(locale: locale, purpose: "day")
+        let formatter = cachedFormatter(locale: locale)
         guard let formatted = formatter.string(from: value as NSNumber) else {
             logger.errorPublic("Failed to format day: \(value)")
             return String(value)
@@ -65,7 +67,7 @@ extension NumberFormatter {
         locale: Locale = .current
     ) -> String {
         let formatter = cachedFormatter(
-            locale: locale, purpose: "currency|\(currencyCode ?? "")",
+            locale: locale,
             style: .currency, currencyCode: currencyCode
         )
         guard let formatted = formatter.string(from: amount as NSDecimalNumber) else {
@@ -115,8 +117,9 @@ extension NumberFormatter {
     ) -> String {
         precondition(fractionDigits.lowerBound >= 0, "Fraction digits must be nonnegative")
         let formatter: NumberFormatter = FormatterCache.formatter(
-            for:
-                "number|\(style.rawValue)|\(fractionDigits.lowerBound)|\(fractionDigits.upperBound)|\(usesGroupingSeparator)|\(locale.identifier)"
+            for: FormatterCache.Key.number(
+                locale: locale, style: style, fractionDigits: fractionDigits,
+                usesGroupingSeparator: usesGroupingSeparator)
         ) {
             let formatter = NumberFormatter()
             formatter.locale = locale
