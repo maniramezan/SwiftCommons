@@ -7,16 +7,16 @@ import Testing
 struct FormatterCacheTests {
     @Test
     func sameKeyReturnsSameInstance() {
-        let f1 = FormatterCache.formatter(for: "test.same") { NumberFormatter() }
-        let f2 = FormatterCache.formatter(for: "test.same") { NumberFormatter() }
-        #expect(f1 === f2)
+        let firstFormatter = FormatterCache.formatter(for: "test.same") { NumberFormatter() }
+        let secondFormatter = FormatterCache.formatter(for: "test.same") { NumberFormatter() }
+        #expect(firstFormatter === secondFormatter)
     }
 
     @Test
     func differentKeysReturnDifferentInstances() {
-        let f1 = FormatterCache.formatter(for: "test.a") { NumberFormatter() }
-        let f2 = FormatterCache.formatter(for: "test.b") { NumberFormatter() }
-        #expect(f1 !== f2)
+        let formatterA = FormatterCache.formatter(for: "test.a") { NumberFormatter() }
+        let formatterB = FormatterCache.formatter(for: "test.b") { NumberFormatter() }
+        #expect(formatterA !== formatterB)
     }
 
     @Test

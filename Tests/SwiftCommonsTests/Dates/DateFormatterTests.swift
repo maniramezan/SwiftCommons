@@ -14,17 +14,17 @@ struct DateFormatterTests {
     @Test
     func formatterCachesPerThread() {
         let locale = Locale(identifier: "en_US")
-        let f1 = DateFormatter.formatter(.MMMMddyyyy, locale: locale)
-        let f2 = DateFormatter.formatter(.MMMMddyyyy, locale: locale)
-        #expect(f1 === f2, "Should return the same cached instance")
+        let firstFormatter = DateFormatter.formatter(.MMMMddyyyy, locale: locale)
+        let secondFormatter = DateFormatter.formatter(.MMMMddyyyy, locale: locale)
+        #expect(firstFormatter === secondFormatter, "Should return the same cached instance")
     }
 
     @Test
     func differentFormatsReturnDifferentFormatters() {
         let locale = Locale(identifier: "en_US")
-        let f1 = DateFormatter.formatter(.MMMMddyyyy, locale: locale)
-        let f2 = DateFormatter.formatter(.MMMMdd, locale: locale)
-        #expect(f1 !== f2)
+        let monthDayYearFormatter = DateFormatter.formatter(.MMMMddyyyy, locale: locale)
+        let monthDayFormatter = DateFormatter.formatter(.MMMMdd, locale: locale)
+        #expect(monthDayYearFormatter !== monthDayFormatter)
     }
 
     @Test
@@ -53,9 +53,9 @@ struct DateFormatterTests {
         gregorian.locale = Locale(identifier: "en_US")
         var persian = Calendar(identifier: .persian)
         persian.locale = Locale(identifier: "en_US")
-        let f1 = DateFormatter.formatter(dateFormat: "y", calendar: gregorian)
-        let f2 = DateFormatter.formatter(dateFormat: "y", calendar: persian)
-        #expect(f1 !== f2)
+        let gregorianFormatter = DateFormatter.formatter(dateFormat: "y", calendar: gregorian)
+        let persianFormatter = DateFormatter.formatter(dateFormat: "y", calendar: persian)
+        #expect(gregorianFormatter !== persianFormatter)
     }
 
     @Test
@@ -72,9 +72,9 @@ struct DateFormatterTests {
     func templateFormatterCachesSameInstance() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "en_US")
-        let f1 = DateFormatter.formatter(template: "yMMMMd", calendar: calendar)
-        let f2 = DateFormatter.formatter(template: "yMMMMd", calendar: calendar)
-        #expect(f1 === f2)
+        let firstFormatter = DateFormatter.formatter(template: "yMMMMd", calendar: calendar)
+        let secondFormatter = DateFormatter.formatter(template: "yMMMMd", calendar: calendar)
+        #expect(firstFormatter === secondFormatter)
     }
 
     @Test

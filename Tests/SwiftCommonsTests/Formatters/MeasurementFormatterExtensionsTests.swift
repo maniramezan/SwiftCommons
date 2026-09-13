@@ -7,15 +7,17 @@ import Testing
 struct MeasurementFormatterExtensionsTests {
     @Test
     func cachedReturnsSameInstanceForSameConfiguration() {
-        let f1 = MeasurementFormatter.cached(unitStyle: .short, locale: Locale(identifier: "en_US"))
-        let f2 = MeasurementFormatter.cached(unitStyle: .short, locale: Locale(identifier: "en_US"))
-        #expect(f1 === f2)
+        let usLocale = Locale(identifier: "en_US")
+        let firstShortFormatter = MeasurementFormatter.cached(unitStyle: .short, locale: usLocale)
+        let secondShortFormatter = MeasurementFormatter.cached(unitStyle: .short, locale: usLocale)
+        #expect(firstShortFormatter === secondShortFormatter)
     }
 
     @Test
     func cachedReturnsDifferentInstanceForDifferentUnitStyle() {
-        let f1 = MeasurementFormatter.cached(unitStyle: .short, locale: Locale(identifier: "en_US"))
-        let f2 = MeasurementFormatter.cached(unitStyle: .long, locale: Locale(identifier: "en_US"))
-        #expect(f1 !== f2)
+        let usLocale = Locale(identifier: "en_US")
+        let shortFormatter = MeasurementFormatter.cached(unitStyle: .short, locale: usLocale)
+        let longFormatter = MeasurementFormatter.cached(unitStyle: .long, locale: usLocale)
+        #expect(shortFormatter !== longFormatter)
     }
 }
