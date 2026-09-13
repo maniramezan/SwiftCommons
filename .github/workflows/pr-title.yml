@@ -1,0 +1,34 @@
+name: PR Title
+
+# Enforces Conventional Commit-style PR titles. Squash-merging bakes the PR title into the
+# commit subject that release.yml scans, so a non-conforming title silently produces a
+# commit that no bump rule matches and no release ever fires for it.
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  lint:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            perf
+            chore
+            ci
+            docs
+            refactor
+            test
+            build
+            style
+          requireScope: false
