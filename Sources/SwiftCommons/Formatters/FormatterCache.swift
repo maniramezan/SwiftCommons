@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// A process-wide, thread-local cache for `Formatter` instances.
 ///
@@ -23,6 +24,8 @@ import Foundation
 ///         return formatter
 ///     }
 public enum FormatterCache {
+    private static let logger: Logger = .swiftCommonsLogger(for: FormatterCache.self)
+
     private struct EntryKey: Hashable {
         let formatterType: ObjectIdentifier
         let keyType: ObjectIdentifier
@@ -62,6 +65,12 @@ public enum FormatterCache {
         }
         let formatter = make()
         storage.formatters[entryKey] = formatter
+        // Fires once per unique (formatter type, key type, configuration, thread) — not per
+        // format call — so this stays informative without becoming hot-path noise.
+        logger.debugPublic(
+            "Cache miss, configuring formatter | formatterType=\(String(describing: F.self)) "
+                + "keyType=\(String(describing: Key.self))"
+        )
         return formatter
     }
 }
