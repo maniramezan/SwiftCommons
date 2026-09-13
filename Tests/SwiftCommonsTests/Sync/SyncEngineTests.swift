@@ -448,9 +448,9 @@ struct SyncEngineTests {
 
         let engineA = SyncEngine(modelContainer: container, lock: lock)
         let engineB = SyncEngine(modelContainer: container, lock: lock)
-        async let a: Void = engineA.sync(adapter("a"))
-        async let b: Void = engineB.sync(adapter("b"))
-        _ = try await (a, b)
+        async let syncA: Void = engineA.sync(adapter("a"))
+        async let syncB: Void = engineB.sync(adapter("b"))
+        _ = try await (syncA, syncB)
 
         // With a shared lock, one pass fully finishes before the other starts.
         // Which pass wins the race for the lock is not deterministic, so accept

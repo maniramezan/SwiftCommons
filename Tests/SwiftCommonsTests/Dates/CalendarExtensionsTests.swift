@@ -6,11 +6,11 @@ import Testing
 @Suite("Calendar extensions")
 struct CalendarExtensionsTests {
     private var calendar: Calendar {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        cal.locale = Locale(identifier: "en_US")
-        cal.firstWeekday = 1  // Sunday
-        return cal
+        var gregorianCalendar = Calendar(identifier: .gregorian)
+        gregorianCalendar.timeZone = .gmt
+        gregorianCalendar.locale = Locale(identifier: "en_US")
+        gregorianCalendar.firstWeekday = 1  // Sunday
+        return gregorianCalendar
     }
 
     // Jan 15, 2024 12:00 UTC
@@ -103,16 +103,16 @@ struct CalendarExtensionsTests {
 
     @Test
     func previousMonthFirstDate() throws {
-        let prev = try calendar.previousMonthFirstDate(for: sampleDate)
-        #expect(calendar.month(from: prev) == 12)
-        #expect(calendar.year(from: prev) == 2023)
+        let previousMonthStart = try calendar.previousMonthFirstDate(for: sampleDate)
+        #expect(calendar.month(from: previousMonthStart) == 12)
+        #expect(calendar.year(from: previousMonthStart) == 2023)
     }
 
     @Test
     func nextMonthWrapsDecemberToJanuary() throws {
         // Dec 15, 2024
-        let dec = Date(timeIntervalSince1970: 1_734_220_800)
-        let next = try calendar.nextMonthFirstDate(for: dec)
+        let december15 = Date(timeIntervalSince1970: 1_734_220_800)
+        let next = try calendar.nextMonthFirstDate(for: december15)
         #expect(calendar.month(from: next) == 1)
         #expect(calendar.year(from: next) == 2025)
     }
@@ -126,8 +126,8 @@ struct CalendarExtensionsTests {
 
     @Test
     func previousYear() throws {
-        let prev = try calendar.previousYear(for: sampleDate)
-        #expect(calendar.year(from: prev) == 2023)
+        let previousYearDate = try calendar.previousYear(for: sampleDate)
+        #expect(calendar.year(from: previousYearDate) == 2023)
     }
 
     @Test

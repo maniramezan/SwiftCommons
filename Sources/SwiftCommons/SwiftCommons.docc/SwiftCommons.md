@@ -34,11 +34,11 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   `Bundle.appVersion`/`.buildNumber`/`.versionAndBuildNumber`, `UUID` byte and
   deterministic-generation helpers, and `Duration.timeInterval`.
 - **Numbers** — `FixedWidthInteger.digits` and locale-aware
-  `NumberFormatter` helpers (`formatYear`, `formatDay`, `formatCurrency`).
+  `NumberFormatter` helpers (`formatYear`, `formatDay`, `formatCurrency`, `formatDecimal`, `formatPercent`).
 - **Dates & calendars** — ``MonthIdentifier`` and ``CalendarArithmetic`` preserve
   era and leap-month identity without application date limits, alongside `Calendar` date math (start of week/month, month
   symbols, month/year arithmetic, inclusive date ranges via `dates(from:through:)`),
-  a thread-safe `DateFormatter.formatter(_:)` cache, and
+  a thread-local date formatter cache for literal patterns, localized templates, and date/time styles, and
   `Date.relativeDescription(to:unitsStyle:locale:)` for human-readable relative
   times (e.g. "1 hour ago").
 - **Localization** — the ``Language`` and ``Country`` enums plus `Locale`

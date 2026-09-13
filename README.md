@@ -105,6 +105,8 @@ UUID().bytes             // [UInt8], canonical byte order
 
 ```swift
 1234.digits                                          // [4, 3, 2, 1]
+NumberFormatter.formatDecimal(1234.5, fractionDigits: 2...2) // "1,234.50" in en_US
+NumberFormatter.formatPercent(0.25)                    // "25%" in en_US
 NumberFormatter.formatYear(2024)                      // "2024" (digits follow the locale)
 NumberFormatter.formatCurrency(9.99, currencyCode: "USD") // "$9.99"
 ```
@@ -113,6 +115,10 @@ NumberFormatter.formatCurrency(9.99, currencyCode: "USD") // "$9.99"
 
 ```swift
 let formatter = DateFormatter.formatter(.MMMMddyyyy) // cached per thread
+let dateAndTime = DateFormatter.formatter(dateStyle: .medium, timeStyle: .short)
+let monthLabel = DateFormatter.formatter(template: "yMMMM", calendar: .current)
+// Cached formatters are shared on the calling thread: treat them as read-only
+// and use them synchronously without passing them between tasks or threads.
 let dateString = formatter.string(from: Date())
 
 let calendar = Calendar(identifier: .gregorian)

@@ -1,5 +1,13 @@
 import Foundation
 
+extension RelativeDateTimeFormatter {
+    /// Cache key for the built-in `RelativeDateTimeFormatter` caching helper below.
+    struct CacheKey: Hashable {
+        let unitsStyle: UnitsStyle
+        let locale: Locale
+    }
+}
+
 extension Date {
     /// Formats the receiver as a human-readable, locale-aware relative time
     /// string using `RelativeDateTimeFormatter`.
@@ -34,19 +42,13 @@ extension Date {
         unitsStyle: RelativeDateTimeFormatter.UnitsStyle,
         locale: Locale
     ) -> RelativeDateTimeFormatter {
-        let cacheKey =
-            "com.swiftcommons.relativedatetimeformatter.\(unitsStyle)|\(locale.identifier)"
-        let threadCache = Thread.current.threadDictionary
-
-        if let cached = threadCache[cacheKey] as? RelativeDateTimeFormatter {
-            return cached
+        FormatterCache.formatter(
+            for: RelativeDateTimeFormatter.CacheKey(unitsStyle: unitsStyle, locale: locale)
+        ) {
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = unitsStyle
+            formatter.locale = locale
+            return formatter
         }
-
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = unitsStyle
-        formatter.locale = locale
-        threadCache[cacheKey] = formatter
-
-        return formatter
     }
 }

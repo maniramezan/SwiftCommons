@@ -1,6 +1,9 @@
 import Foundation
 
 /// Calendar arithmetic preserving era and leap-month identity, without application date limits.
+///
+/// A month split by an era change (for example January 1989, Showa 64 then Heisei 1) is treated
+/// as two months, each covering only the days inside its own era.
 public struct CalendarArithmetic: Sendable {
     /// The calendar used to resolve month identities and dates, including its time zone.
     public let calendar: Calendar
@@ -12,7 +15,7 @@ public struct CalendarArithmetic: Sendable {
 
     /// Returns the identity of the month containing a date.
     public func month(containing date: Date) -> MonthIdentifier {
-        let start = calendar.dateInterval(of: .month, for: date)?.start ?? date
+        let start = segmentStart(for: date) ?? date
         let components = calendar.dateComponents([.era, .year, .month], from: start)
         return MonthIdentifier(
             month: components.month ?? 1, year: components.year ?? 1,
@@ -27,25 +30,46 @@ public struct CalendarArithmetic: Sendable {
         var components = DateComponents(
             era: month.era, year: month.year, month: month.month, day: 1)
         components.isLeapMonth = month.isLeapMonth
-        guard let date = calendar.date(from: components), self.month(containing: date) == month
-        else {
-            return nil
-        }
-        return calendar.dateInterval(of: .month, for: date)?.start
+        // Day 1 of a month whose era began mid-month resolves into the previous era, so also try
+        // the era segment that ends the month.
+        guard let date = calendar.date(from: components),
+            let monthInterval = calendar.dateInterval(of: .month, for: date),
+            let lastDay = calendar.date(byAdding: .day, value: -1, to: monthInterval.end)
+        else { return nil }
+        return [monthInterval.start, segmentStart(for: lastDay)]
+            .compactMap { $0 }
+            .first { self.month(containing: $0) == month }
     }
 
-    /// Returns the interval for a valid month identity.
+    /// Returns the interval for a valid month identity, limited to the days in its era.
     public func interval(of month: MonthIdentifier) -> DateInterval? {
-        guard let start = start(of: month) else { return nil }
-        return calendar.dateInterval(of: .month, for: start)
+        guard let start = start(of: month),
+            let monthEnd = calendar.dateInterval(of: .month, for: start)?.end,
+            let lastDay = calendar.date(byAdding: .day, value: -1, to: monthEnd)
+        else { return nil }
+        let era = calendar.component(.era, from: start)
+        guard calendar.component(.era, from: lastDay) != era else {
+            return DateInterval(start: start, end: monthEnd)
+        }
+        var day = start
+        while let next = calendar.date(byAdding: .day, value: 1, to: day), next < monthEnd {
+            if calendar.component(.era, from: next) != era {
+                return DateInterval(start: start, end: next)
+            }
+            day = next
+        }
+        return DateInterval(start: start, end: monthEnd)
     }
 
     /// Returns a date for a day in the month, or nil when the day or month is invalid.
     public func date(day: Int, in month: MonthIdentifier) -> Date? {
-        guard let start = start(of: month),
-            let days = calendar.range(of: .day, in: .month, for: start), days.contains(day)
+        guard let interval = interval(of: month),
+            let monthStart = calendar.dateInterval(of: .month, for: interval.start)?.start,
+            let days = calendar.range(of: .day, in: .month, for: monthStart), days.contains(day),
+            let date = calendar.date(byAdding: .day, value: day - 1, to: monthStart),
+            date >= interval.start, date < interval.end
         else { return nil }
-        return calendar.date(byAdding: .day, value: day - 1, to: start)
+        return date
     }
 
     /// Returns a relative month without imposing an application date range.
@@ -64,21 +88,37 @@ public struct CalendarArithmetic: Sendable {
             let seed = calendar.date(from: DateComponents(era: era, year: year, month: 1, day: 1)),
             let yearInterval = calendar.dateInterval(of: .year, for: seed)
         else { return [] }
-        let eraInterval = calendar.dateInterval(of: .era, for: reference)
-        let start = max(yearInterval.start, eraInterval?.start ?? yearInterval.start)
-        let end = min(yearInterval.end, eraInterval?.end ?? yearInterval.end)
-        guard start < end, calendar.component(.year, from: start) == year else { return [] }
         var result: [MonthIdentifier] = []
-        var cursor = start
-        while cursor < end {
+        var cursor = yearInterval.start
+        while cursor < yearInterval.end {
             guard let interval = calendar.dateInterval(of: .month, for: cursor),
-                interval.end > cursor
+                interval.end > cursor,
+                let lastDay = calendar.date(byAdding: .day, value: -1, to: interval.end)
             else {
                 break
             }
-            result.append(month(containing: cursor))
+            for identifier in [month(containing: interval.start), month(containing: lastDay)]
+            where identifier.era == era && identifier.year == year && result.last != identifier {
+                result.append(identifier)
+            }
             cursor = interval.end
         }
         return result
+    }
+
+    /// Returns the first day of the date's month that lies in the date's era.
+    private func segmentStart(for date: Date) -> Date? {
+        guard let monthStart = calendar.dateInterval(of: .month, for: date)?.start else {
+            return nil
+        }
+        let era = calendar.component(.era, from: date)
+        var day = monthStart
+        while calendar.component(.era, from: day) != era {
+            guard let next = calendar.date(byAdding: .day, value: 1, to: day), next <= date else {
+                return monthStart
+            }
+            day = next
+        }
+        return day
     }
 }

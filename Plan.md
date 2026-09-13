@@ -44,3 +44,23 @@ Use this file to track non-trivial work. Keep it short and updated as you go.
 - [x] Pass full SwiftCommons tests and formatting.
 - [x] Verify 95.85% line coverage and DocC with warnings treated as errors.
 - [ ] Merge PR and publish the release.
+
+## Common formatters and branch review
+
+- [x] Review formatter cache and date/numeric helpers.
+- [x] Include week rules in calendar cache keys and document cached-instance ownership.
+- [x] Add localized date/time styles and decimal/percentage formatting.
+- [x] Add regression coverage and run formatting and package tests (187 tests passed; changed Swift files pass swift-format lint).
+- [x] Reuse the shared cache for relative dates and document the new helpers in README/DocC.
+- Validation used writable module caches under `/tmp` and `swift test --disable-sandbox` due to workspace filesystem restrictions.
+
+## Typed formatter cache keys
+
+- [x] Replace interpolated keys with Hashable configurations and a single per-thread storage object.
+- [x] Namespace entries by formatter and key type; use full Calendar/Locale/TimeZone values.
+- [x] Verify typed-key reuse and collision isolation: all 189 tests pass; changed files pass formatting lint.
+
+## Consolidated formatter kinds
+
+- [x] Centralize built-in configurations in `FormatterCache.Key`, with associated values and synthesized Hashable conformance.
+- [x] Validate enum case separation: all 190 tests pass; changed Swift files pass formatting lint.

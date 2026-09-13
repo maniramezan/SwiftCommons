@@ -32,15 +32,13 @@ public func withRetry<Value: Sendable>(
 ) async throws -> Value {
     precondition(attempts >= 1, "attempts must be at least 1")
 
-    var lastError: Error!
     for attempt in 0..<attempts {
         do {
             return try await operation()
         } catch {
-            lastError = error
             let isLastAttempt = attempt == attempts - 1
             if isLastAttempt {
-                break
+                throw error
             }
             if delay > .zero {
                 try await clock.sleep(for: delay)
@@ -49,5 +47,5 @@ public func withRetry<Value: Sendable>(
             }
         }
     }
-    throw lastError
+    fatalError("unreachable: the loop above always returns or throws before exiting")
 }
