@@ -38,4 +38,42 @@ struct DateFormatterTests {
         let date = Date(timeIntervalSince1970: 1_705_276_800)
         #expect(formatter.string(from: date) == "01/15/2024")
     }
+
+    @Test
+    func patternFormatterAppliesCalendar() {
+        var persian = Calendar(identifier: .persian)
+        persian.locale = Locale(identifier: "en_US")
+        let formatter = DateFormatter.formatter(dateFormat: "y", calendar: persian)
+        #expect(formatter.calendar?.identifier == .persian)
+    }
+
+    @Test
+    func patternFormatterCachesPerCalendarSignature() {
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.locale = Locale(identifier: "en_US")
+        var persian = Calendar(identifier: .persian)
+        persian.locale = Locale(identifier: "en_US")
+        let f1 = DateFormatter.formatter(dateFormat: "y", calendar: gregorian)
+        let f2 = DateFormatter.formatter(dateFormat: "y", calendar: persian)
+        #expect(f1 !== f2)
+    }
+
+    @Test
+    func templateFormatterResolvesLocalizedPattern() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = Locale(identifier: "en_US")
+        let formatter = DateFormatter.formatter(template: "yMMMMd", calendar: calendar)
+        // Jan 15, 2024 00:00 UTC
+        let date = Date(timeIntervalSince1970: 1_705_276_800)
+        #expect(formatter.string(from: date).contains("January"))
+    }
+
+    @Test
+    func templateFormatterCachesSameInstance() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = Locale(identifier: "en_US")
+        let f1 = DateFormatter.formatter(template: "yMMMMd", calendar: calendar)
+        let f2 = DateFormatter.formatter(template: "yMMMMd", calendar: calendar)
+        #expect(f1 === f2)
+    }
 }

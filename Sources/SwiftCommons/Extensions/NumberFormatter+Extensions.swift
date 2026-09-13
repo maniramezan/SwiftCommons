@@ -6,18 +6,12 @@ extension NumberFormatter {
 
     /// Returns a thread-local cached `NumberFormatter` for the given locale.
     private static func cachedFormatter(locale: Locale, purpose: String) -> NumberFormatter {
-        let cacheKey = "com.swiftcommons.numberformatter.\(purpose)|\(locale.identifier)"
-        let threadCache = Thread.current.threadDictionary
-
-        if let cached = threadCache[cacheKey] as? NumberFormatter {
-            return cached
+        FormatterCache.formatter(for: "\(purpose)|\(locale.identifier)") {
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .none
+            formatter.locale = locale
+            return formatter
         }
-
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .none
-        formatter.locale = locale
-        threadCache[cacheKey] = formatter
-        return formatter
     }
 
     /// Formats a year value using the provided locale.
