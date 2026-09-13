@@ -106,6 +106,30 @@ struct CalendarArithmeticTests {
         #expect(arithmetic.months(in: 64, relativeTo: january7) == [showa])
     }
 
+    @Test func offsetSingleStepsThroughBothSegmentsOfASplitMonth() throws {
+        let tokyo = try #require(TimeZone(identifier: "Asia/Tokyo"))
+        var japanese = Calendar(identifier: .japanese)
+        japanese.timeZone = tokyo
+        let arithmetic = CalendarArithmetic(calendar: japanese)
+        let showa = MonthIdentifier(month: 1, year: 64, calendarIdentifier: .japanese, era: 234)
+        let heisei = MonthIdentifier(month: 1, year: 1, calendarIdentifier: .japanese, era: 235)
+        let february = MonthIdentifier(month: 2, year: 1, calendarIdentifier: .japanese, era: 235)
+
+        // A ±1 step must land on the adjacent segment of a split month, not skip past it: naive
+        // calendar-month arithmetic from Showa's day 1 (or Heisei-Feb's day 1) lands on the
+        // *other* era's segment of the same Gregorian month, since Heisei's January starts on the
+        // 8th rather than the 1st.
+        #expect(arithmetic.month(offset: 1, from: showa) == heisei)
+        #expect(arithmetic.month(offset: -1, from: heisei) == showa)
+        #expect(arithmetic.month(offset: 1, from: heisei) == february)
+        #expect(arithmetic.month(offset: -1, from: february) == heisei)
+
+        // Stepping +1 then -1 (as a "next month" / "previous month" UI control would) must return
+        // to the exact starting identity.
+        let forward = try #require(arithmetic.month(offset: 1, from: heisei))
+        #expect(arithmetic.month(offset: -1, from: forward) == heisei)
+    }
+
     @Test func hebrewYearBoundaryPreservesThirteenthMonth() throws {
         let calendar = try calendar(.hebrew)
         let arithmetic = CalendarArithmetic(calendar: calendar)
