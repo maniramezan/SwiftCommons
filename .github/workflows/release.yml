@@ -1,8 +1,16 @@
 name: Release
 
 # Tags the repository and publishes a GitHub Release (with auto-generated notes)
-# whenever the "CI" workflow succeeds on main. Versions are derived from
-# Conventional Commit subjects since the previous tag; no CHANGELOG.md is kept.
+# whenever the "CI" workflow succeeds on main. Versions are derived from the
+# Conventional Commit prefix of each merged PR's TITLE (not the squash commit
+# message) since the previous tag; no CHANGELOG.md is kept.
+#
+# We always squash-merge, but GitHub only substitutes the PR title into the
+# squash commit message for multi-commit PRs — a single-commit PR keeps that
+# commit's own message verbatim, which can drift from the (CI-enforced)
+# Conventional Commit PR title. So for every commit since the last tag we look
+# up its "(#NNN)" PR number and read that PR's title via the API, falling back
+# to the raw commit subject only if no PR number is found (e.g. a direct push).
 # Tags are bare SemVer with NO "v" prefix (e.g. 0.3.0, 0.4.0).
 #
 # Bump rules (0.x, pre-1.0):
@@ -48,6 +56,7 @@ jobs:
         id: version
         env:
           FORCE_VERSION: ${{ github.event.inputs.force_version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -82,11 +91,29 @@ jobs:
             exit 0
           fi
 
+          # For each commit since the last tag, prefer its merged PR's title
+          # (what the Conventional Commit PR-title check in ci.yml enforces)
+          # over the squash commit's own subject, which only matches the PR
+          # title for multi-commit PRs. Falls back to the commit subject/body
+          # when no PR number is found.
           breaking=false; feat=false; fix=false
-          if git log "$range" --format='%s' | grep -Eq '^[a-zA-Z]+(\([^)]+\))?!:'; then breaking=true; fi
-          if git log "$range" --format='%B' | grep -Eq 'BREAKING[ -]CHANGE'; then breaking=true; fi
-          if git log "$range" --format='%s' | grep -Eq '^feat(\([^)]+\))?!?:'; then feat=true; fi
-          if git log "$range" --format='%s' | grep -Eq '^(fix|perf)(\([^)]+\))?!?:'; then fix=true; fi
+          while IFS= read -r sha; do
+            [ -z "$sha" ] && continue
+            subject="$(git log -1 --format='%s' "$sha")"
+            body="$(git log -1 --format='%b' "$sha")"
+            pr_number="$(printf '%s' "$subject" | grep -oE '\(#[0-9]+\)$' | grep -oE '[0-9]+' || true)"
+            title=""
+            if [ -n "$pr_number" ]; then
+              title="$(gh pr view "$pr_number" --repo "$GITHUB_REPOSITORY" --json title -q .title 2>/dev/null || true)"
+            fi
+            if [ -z "$title" ]; then
+              title="$subject"
+            fi
+            if printf '%s' "$title" | grep -Eq '^[a-zA-Z]+(\([^)]+\))?!:'; then breaking=true; fi
+            if printf '%s\n%s' "$title" "$body" | grep -Eq 'BREAKING[ -]CHANGE'; then breaking=true; fi
+            if printf '%s' "$title" | grep -Eq '^feat(\([^)]+\))?!?:'; then feat=true; fi
+            if printf '%s' "$title" | grep -Eq '^(fix|perf)(\([^)]+\))?!?:'; then fix=true; fi
+          done <<< "$(git log "$range" --format='%H')"
 
           bump="none"
           if [ "$major" -eq 0 ]; then
