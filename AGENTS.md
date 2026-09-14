@@ -55,8 +55,10 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Duration.timeInterval` bridges `Duration` to `TimeInterval`.
 - `URL` adopts `ExpressibleByStringLiteral` using `@retroactive` (Swift 6).
 - `DateFormatter.formatter(...)` caches per-thread instances via `Thread.current.threadDictionary`.
-- `NumberFormatter.formatYear(_:locale:)`, `.formatDay(_:locale:)`, and `.formatCurrency(_:currencyCode:locale:)`
-  cache formatters per-thread and per (purpose, locale) the same way.
+- `NumberFormatter.formatYear(_:locale:)`, `.formatDay(_:locale:)`, `.formatOrdinal(_:locale:)`,
+  `.formatCurrency(_:currencyCode:locale:)`, `.formatDecimal(_:fractionDigits:usesGroupingSeparator:locale:)`,
+  and `.formatPercent(_:fractionDigits:locale:)` cache formatters per-thread and per (purpose, locale)
+  the same way.
 - `Date.relativeDescription(to:unitsStyle:locale:)` wraps `RelativeDateTimeFormatter` with the same
   per-thread caching pattern (e.g. "1 hour ago").
 - `Calendar` extensions provide date math (start of week/month, month symbols, adding months/years,

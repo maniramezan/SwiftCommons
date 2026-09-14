@@ -69,6 +69,19 @@ extension NumberFormatter {
         return formatted
     }
 
+    /// Formats a number as a localized ordinal (e.g., "1st", "2nd", "3rd" in US English).
+    ///
+    /// Digit glyphs and ordinal suffixes follow whatever numbering system and locale rules
+    /// are encoded in `locale`.
+    public static func formatOrdinal(_ value: Int, locale: Locale = .current) -> String {
+        let formatter = cachedFormatter(locale: locale, style: .ordinal)
+        guard let formatted = formatter.string(from: value as NSNumber) else {
+            logger.errorPublic("Failed to format ordinal: \(value)")
+            return String(value)
+        }
+        return formatted
+    }
+
     /// Formats an amount as localized currency.
     ///
     ///     NumberFormatter.formatCurrency(9.99, currencyCode: "USD", locale: .init(identifier: "en_US")) // "$9.99"

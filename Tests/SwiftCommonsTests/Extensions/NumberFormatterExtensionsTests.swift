@@ -24,6 +24,20 @@ struct NumberFormatterExtensionsTests {
         #expect(NumberFormatter.formatDay(value, locale: Locale(identifier: "en_US")) == expected)
     }
 
+    @Test(arguments: [
+        (1, "1st"),
+        (2, "2nd"),
+        (3, "3rd"),
+        (4, "4th"),
+        (11, "11th"),
+        (12, "12th"),
+        (21, "21st"),
+    ])
+    func formatOrdinal(value: Int, expected: String) {
+        #expect(
+            NumberFormatter.formatOrdinal(value, locale: Locale(identifier: "en_US")) == expected)
+    }
+
     @Test
     func formatCurrencyWithExplicitCurrencyCode() {
         let formatted = NumberFormatter.formatCurrency(
