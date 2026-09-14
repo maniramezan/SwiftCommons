@@ -23,6 +23,36 @@ extension DateFormatter {
         /// "MM/dd/yyyy" format (e.g., "01/30/2026").
         // swift-format-ignore: AlwaysUseLowerCamelCase
         case MMddyyyy = "MM/dd/yyyy"
+        /// "yyyy-MM-dd" format (e.g., "2026-01-30"). ISO 8601 date, locale-agnostic and
+        /// lexicographically sortable.
+        // swift-format-ignore: AlwaysUseLowerCamelCase
+        case yyyyMMdd = "yyyy-MM-dd"
+        /// "dd/MM/yyyy" format (e.g., "30/01/2026"). Day-first, slash-separated — the common
+        /// EU/UK short numeric format.
+        // swift-format-ignore: AlwaysUseLowerCamelCase
+        case ddMMyyyy = "dd/MM/yyyy"
+        /// "dd.MM.yyyy" format (e.g., "30.01.2026"). Day-first, dot-separated — common in
+        /// Germany, Austria, and other Central/Eastern European locales.
+        // swift-format-ignore: AlwaysUseLowerCamelCase
+        case ddMMyyyyDotted = "dd.MM.yyyy"
+        /// "dd MMMM yyyy" format (e.g., "30 January 2026"). Day-first long form used across
+        /// the EU and UK.
+        // swift-format-ignore: AlwaysUseLowerCamelCase
+        case ddMMMMyyyy = "dd MMMM yyyy"
+        /// "HH:mm" format (e.g., "14:30"). 24-hour time, no seconds.
+        // swift-format-ignore: AlwaysUseLowerCamelCase
+        case HHmm = "HH:mm"
+        /// "HH:mm:ss" format (e.g., "14:30:05"). 24-hour time with seconds.
+        // swift-format-ignore: AlwaysUseLowerCamelCase
+        case HHmmss = "HH:mm:ss"
+        /// "h:mm a" format (e.g., "2:30 PM"). 12-hour time with AM/PM marker.
+        // swift-format-ignore: AlwaysUseLowerCamelCase
+        case hmma = "h:mm a"
+        /// "yyyy-MM-dd HH:mm" format (e.g., "2026-01-30 14:30"). ISO-style date and time,
+        /// space-separated (not a full ISO 8601 timestamp — use `ISO8601DateFormatter` for
+        /// timezone-qualified round-tripping).
+        // swift-format-ignore: AlwaysUseLowerCamelCase
+        case yyyyMMddHHmm = "yyyy-MM-dd HH:mm"
     }
 
     /// Returns a cached date formatter for the given type, locale, and time zone.

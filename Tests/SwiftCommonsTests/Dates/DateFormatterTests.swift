@@ -40,6 +40,50 @@ struct DateFormatterTests {
     }
 
     @Test
+    func formatterFormatsISODate() {
+        let formatter = DateFormatter.formatter(
+            .yyyyMMdd, locale: Locale(identifier: "en_US"), timeZone: .gmt)
+        // Jan 15, 2024 00:00 UTC
+        let date = Date(timeIntervalSince1970: 1_705_276_800)
+        #expect(formatter.string(from: date) == "2024-01-15")
+    }
+
+    @Test
+    func formatterFormatsEUDates() {
+        let locale = Locale(identifier: "en_US")
+        // Jan 15, 2024 00:00 UTC
+        let date = Date(timeIntervalSince1970: 1_705_276_800)
+        #expect(
+            DateFormatter.formatter(.ddMMyyyy, locale: locale, timeZone: .gmt).string(from: date)
+                == "15/01/2024")
+        #expect(
+            DateFormatter.formatter(.ddMMyyyyDotted, locale: locale, timeZone: .gmt).string(
+                from: date) == "15.01.2024")
+        #expect(
+            DateFormatter.formatter(.ddMMMMyyyy, locale: locale, timeZone: .gmt).string(from: date)
+                == "15 January 2024")
+    }
+
+    @Test
+    func formatterFormatsTimePatterns() {
+        let locale = Locale(identifier: "en_US")
+        // Jan 15, 2024 14:30:05 UTC
+        let date = Date(timeIntervalSince1970: 1_705_329_005)
+        #expect(
+            DateFormatter.formatter(.HHmm, locale: locale, timeZone: .gmt).string(from: date)
+                == "14:30")
+        #expect(
+            DateFormatter.formatter(.HHmmss, locale: locale, timeZone: .gmt).string(from: date)
+                == "14:30:05")
+        #expect(
+            DateFormatter.formatter(.hmma, locale: locale, timeZone: .gmt).string(from: date)
+                == "2:30 PM")
+        #expect(
+            DateFormatter.formatter(.yyyyMMddHHmm, locale: locale, timeZone: .gmt).string(
+                from: date) == "2024-01-15 14:30")
+    }
+
+    @Test
     func patternFormatterAppliesCalendar() {
         var persian = Calendar(identifier: .persian)
         persian.locale = Locale(identifier: "en_US")
