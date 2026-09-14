@@ -13,9 +13,26 @@ public struct CalendarArithmetic: Sendable {
         self.calendar = calendar
     }
 
+    /// Whether this calendar system can have an era boundary fall in the middle of a month.
+    ///
+    /// Every era-splitting code path below costs a handful of extra `Calendar` calls per
+    /// invocation over the simple, non-splitting arithmetic — real overhead when `month(containing:)`
+    /// runs on every realized row of a scrolling calendar. Only Japan's imperial eras change on an
+    /// arbitrary day (a new emperor's accession), so every other calendar system — including ones
+    /// with their own single, fixed era (Hebrew AM, Islamic AH, Buddhist BE, ...) — can skip that
+    /// work entirely and use the cheaper path a normal (non-era-splitting) month lookup needs.
+    private var canSplitAcrossEra: Bool {
+        calendar.identifier == .japanese
+    }
+
     /// Returns the identity of the month containing a date.
     public func month(containing date: Date) -> MonthIdentifier {
-        let start = segmentStart(for: date) ?? date
+        let start: Date
+        if canSplitAcrossEra {
+            start = segmentStart(for: date) ?? date
+        } else {
+            start = calendar.dateInterval(of: .month, for: date)?.start ?? date
+        }
         let components = calendar.dateComponents([.era, .year, .month], from: start)
         return MonthIdentifier(
             month: components.month ?? 1, year: components.year ?? 1,
@@ -30,11 +47,15 @@ public struct CalendarArithmetic: Sendable {
         var components = DateComponents(
             era: month.era, year: month.year, month: month.month, day: 1)
         components.isLeapMonth = month.isLeapMonth
+        guard let date = calendar.date(from: components),
+            let monthInterval = calendar.dateInterval(of: .month, for: date)
+        else { return nil }
+        guard canSplitAcrossEra else {
+            return self.month(containing: monthInterval.start) == month ? monthInterval.start : nil
+        }
         // Day 1 of a month whose era began mid-month resolves into the previous era, so also try
         // the era segment that ends the month.
-        guard let date = calendar.date(from: components),
-            let monthInterval = calendar.dateInterval(of: .month, for: date),
-            let lastDay = calendar.date(byAdding: .day, value: -1, to: monthInterval.end)
+        guard let lastDay = calendar.date(byAdding: .day, value: -1, to: monthInterval.end)
         else { return nil }
         return [monthInterval.start, segmentStart(for: lastDay)]
             .compactMap { $0 }
@@ -44,9 +65,14 @@ public struct CalendarArithmetic: Sendable {
     /// Returns the interval for a valid month identity, limited to the days in its era.
     public func interval(of month: MonthIdentifier) -> DateInterval? {
         guard let start = start(of: month),
-            let monthEnd = calendar.dateInterval(of: .month, for: start)?.end,
-            let lastDay = calendar.date(byAdding: .day, value: -1, to: monthEnd)
+            let monthEnd = calendar.dateInterval(of: .month, for: start)?.end
         else { return nil }
+        guard canSplitAcrossEra else {
+            return DateInterval(start: start, end: monthEnd)
+        }
+        guard let lastDay = calendar.date(byAdding: .day, value: -1, to: monthEnd) else {
+            return nil
+        }
         let era = calendar.component(.era, from: start)
         guard calendar.component(.era, from: lastDay) != era else {
             return DateInterval(start: start, end: monthEnd)
