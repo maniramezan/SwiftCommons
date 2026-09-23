@@ -176,4 +176,38 @@ struct DateFormatterTests {
         }
     }
 
+    @Test(
+        "Numeric patterns render Gregorian ASCII output in any locale",
+        arguments: ["th_TH", "ar_SA", "fa_IR", "ja_JP@calendar=japanese", "en_US"]
+    )
+    func numericPatternsIgnoreLocaleCalendarAndDigits(localeIdentifier: String) {
+        let date = Date(timeIntervalSince1970: 1_769_790_600)  // 2026-01-30 16:30 UTC
+        let locale = Locale(identifier: localeIdentifier)
+        func format(_ type: DateFormatter.FormatType) -> String {
+            DateFormatter.formatter(type, locale: locale, timeZone: .gmt).string(from: date)
+        }
+        #expect(format(.yyyyMMdd) == "2026-01-30")
+        #expect(format(.MMddyyyy) == "01/30/2026")
+        #expect(format(.ddMMyyyy) == "30/01/2026")
+        #expect(format(.ddMMyyyyDotted) == "30.01.2026")
+        #expect(format(.HHmm) == "16:30")
+        #expect(format(.HHmmss) == "16:30:00")
+        #expect(format(.yyyyMMddHHmm) == "2026-01-30 16:30")
+    }
+
+    @Test
+    func numericPatternsShareOneCacheEntryAcrossLocales() {
+        let thai = DateFormatter.formatter(.yyyyMMdd, locale: Locale(identifier: "th_TH"))
+        let english = DateFormatter.formatter(.yyyyMMdd, locale: Locale(identifier: "en_US"))
+        #expect(thai === english)
+    }
+
+    @Test
+    func namedPatternsStillFollowLocale() {
+        let date = Date(timeIntervalSince1970: 1_769_790_600)
+        let formatted = DateFormatter.formatter(
+            .ddMMMMyyyy, locale: Locale(identifier: "fr_FR"), timeZone: .gmt
+        ).string(from: date)
+        #expect(formatted == "30 janvier 2026")
+    }
 }

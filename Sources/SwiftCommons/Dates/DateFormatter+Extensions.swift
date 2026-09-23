@@ -13,6 +13,14 @@ extension DateFormatter {
     }
 
     /// Common literal date format patterns used by SwiftCommons.
+    ///
+    /// Purely numeric patterns (``yyyyMMdd``, ``MMddyyyy``, ``ddMMyyyy``, ``ddMMyyyyDotted``,
+    /// ``HHmm``, ``HHmmss``, ``yyyyMMddHHmm``) always render with the Gregorian calendar and
+    /// ASCII digits (`en_US_POSIX`), whatever locale is passed, so they stay stable for
+    /// storage, parsing, and interchange. Without this a Thai locale would yield Buddhist-era
+    /// years (`2569-01-30`) and an Arabic locale Arabic-Indic digits. Patterns containing month
+    /// names or an AM/PM marker (``MMMMddyyyy``, ``MMMMdd``, ``ddMMMMyyyy``, ``hmma``) follow
+    /// the supplied locale.
     public enum FormatType: String, Sendable {
         /// "MMMM dd, yyyy" format (e.g., "January 30, 2026").
         // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -23,8 +31,8 @@ extension DateFormatter {
         /// "MM/dd/yyyy" format (e.g., "01/30/2026").
         // swift-format-ignore: AlwaysUseLowerCamelCase
         case MMddyyyy = "MM/dd/yyyy"
-        /// "yyyy-MM-dd" format (e.g., "2026-01-30"). ISO 8601 date, locale-agnostic and
-        /// lexicographically sortable.
+        /// "yyyy-MM-dd" format (e.g., "2026-01-30"). ISO 8601 date, lexicographically sortable;
+        /// always Gregorian with ASCII digits.
         // swift-format-ignore: AlwaysUseLowerCamelCase
         case yyyyMMdd = "yyyy-MM-dd"
         /// "dd/MM/yyyy" format (e.g., "30/01/2026"). Day-first, slash-separated — the common
@@ -53,26 +61,48 @@ extension DateFormatter {
         /// timezone-qualified round-tripping).
         // swift-format-ignore: AlwaysUseLowerCamelCase
         case yyyyMMddHHmm = "yyyy-MM-dd HH:mm"
+
+        /// Whether the pattern is purely numeric and therefore rendered with a fixed
+        /// Gregorian calendar and `en_US_POSIX` locale, ignoring the caller's locale.
+        var isLocaleIndependent: Bool {
+            switch self {
+            case .MMMMddyyyy, .MMMMdd, .ddMMMMyyyy, .hmma: false
+            case .MMddyyyy, .yyyyMMdd, .ddMMyyyy, .ddMMyyyyDotted, .HHmm, .HHmmss, .yyyyMMddHHmm:
+                true
+            }
+        }
     }
 
+    /// The fixed locale used for locale-independent patterns.
+    private static let posixLocale = Locale(identifier: "en_US_POSIX")
+
     /// Returns a cached date formatter for the given type, locale, and time zone.
+    ///
+    /// Numeric patterns ignore `locale` and always use the Gregorian calendar with
+    /// `en_US_POSIX`; see ``FormatType``.
     /// - Parameters:
     ///   - formatterType: The literal date format pattern to use.
-    ///   - locale: The locale to apply.
+    ///   - locale: The locale to apply to patterns with month names or AM/PM markers.
     ///   - timeZone: The time zone to apply.
     public static func formatter(
         _ formatterType: FormatType,
         locale: Locale = Locale.current,
         timeZone: TimeZone = TimeZone.current
     ) -> DateFormatter {
-        FormatterCache.formatter(
+        let isLocaleIndependent = formatterType.isLocaleIndependent
+        let resolvedLocale = isLocaleIndependent ? posixLocale : locale
+        let calendar: Calendar? = isLocaleIndependent ? Calendar(identifier: .gregorian) : nil
+        return FormatterCache.formatter(
             for: DateFormatter.CacheKey.date(
-                format: .pattern(formatterType.rawValue), calendar: nil,
-                locale: locale, timeZone: timeZone)
+                format: .pattern(formatterType.rawValue), calendar: calendar,
+                locale: resolvedLocale, timeZone: timeZone)
         ) {
             let formatter = DateFormatter()
             formatter.timeZone = timeZone
-            formatter.locale = locale
+            formatter.locale = resolvedLocale
+            if let calendar {
+                formatter.calendar = calendar
+            }
             formatter.dateFormat = formatterType.rawValue
             return formatter
         }
