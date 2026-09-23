@@ -221,6 +221,20 @@ let state = await LoadingState.load { try await fetchItems() }
 expectLoaded(state) // records a test failure if `state` isn't `.loaded`
 ```
 
+## Agent skills
+
+The repo ships [Agent Skills](https://skills.sh) that teach coding agents (Claude Code, Codex,
+Cursor, …) to use SwiftCommons correctly in *your* app. Install them into a consuming project:
+
+```bash
+npx skills add maniramezan/SwiftCommons                         # all three
+npx skills add maniramezan/SwiftCommons --skill swiftcommons-sync
+```
+
+- `swiftcommons` — "use this instead of hand-rolling it" API map, logging conventions, pitfalls.
+- `swiftcommons-sync` — adding a `SyncEngine` resource end to end.
+- `swiftcommons-testing` — `SwiftCommonsTestSupport` patterns (fake clock, fixtures).
+
 ## Documentation
 
 Full API documentation is published with DocC to GitHub Pages.
