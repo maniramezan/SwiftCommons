@@ -17,15 +17,25 @@ public protocol StringParsable {
 
 extension StringParsable where Self: LosslessStringConvertible {
 
-    /// Default: defer to `LosslessStringConvertible`.
+    /// Default: defer to `LosslessStringConvertible`, ignoring surrounding whitespace and
+    /// newlines (config files and environment variables often carry a trailing newline).
     public init?(parsing text: String) {
-        self.init(text)
+        self.init(text.trimmed)
     }
 }
 
 extension Int: StringParsable {}
 extension Double: StringParsable {}
-extension String: StringParsable {}
+
+extension String: StringParsable {
+
+    /// Returns `text` verbatim; unlike the other conformances, whitespace is significant.
+    ///
+    /// - Parameter text: The raw string.
+    public init?(parsing text: String) {
+        self = text
+    }
+}
 
 extension Bool: StringParsable {
 
