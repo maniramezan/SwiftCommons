@@ -60,4 +60,16 @@ struct LoggerExtensionsTests {
         logger.traceExit()
         logger.traceExit("with message")
     }
+
+    @Test
+    func errorLogSummaryExposesTypeDomainAndCode() {
+        let summary = ErrorLogSummary(URLError(.notConnectedToInternet))
+        #expect(summary.identity.hasSuffix("(NSURLErrorDomain -1009)"))
+        #expect(!summary.localizedDescription.isEmpty)
+
+        let swiftErrorSummary = ErrorLogSummary(SampleError.boom)
+        #expect(
+            swiftErrorSummary.identity.hasPrefix(
+                "SwiftCommonsTests.LoggerExtensionsTests.SampleError ("))
+    }
 }
