@@ -12,7 +12,7 @@ public enum SyncEvent: Sendable, Equatable {
     /// - Parameters:
     ///   - resource: The resource that synced.
     ///   - mode: The final page mode (`"full"` or a delta mode).
-    ///   - applied: Number of acknowledgements applied.
+    ///   - applied: Number of acknowledgements the server returned for the pass.
     ///   - serverChanges: Number of server changes ingested across all pages.
     ///   - durationMs: Wall-clock duration in milliseconds.
     case completed(

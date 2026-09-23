@@ -98,8 +98,12 @@ public final class SyncEngine {
         return metadata
     }
 
-    func update<Change>(_ metadata: SyncMetadata, with response: SyncResponseDTO<Change>) {
-        metadata.cursor = response.cursor
+    func update<Change>(
+        _ metadata: SyncMetadata, with response: SyncResponseDTO<Change>, persistCursor: Bool
+    ) {
+        if persistCursor {
+            metadata.cursor = response.cursor
+        }
         metadata.syncVersion = response.syncVersion
         if let serverInfo = response.serverInfo {
             metadata.serverInfo = serverInfo
@@ -146,12 +150,16 @@ extension SyncEngine {
                     deletes: adapter.makeDeletes(pending)
                 )
             )
+            // Acks arrive on the push response. A full resync replaces that response, so keep
+            // its acks and apply them together with any on the resync response.
+            var applied = response.applied
             if response.fullResyncRequired {
                 response = try await fullResync(adapter, metadata: metadata, context: context)
+                applied += response.applied
             }
 
             await applyAck(
-                response.applied,
+                applied,
                 pendingByKey: pendingByKey,
                 sentVersions: sentVersions,
                 resource: resource
@@ -159,23 +167,27 @@ extension SyncEngine {
 
             var activeKeys = Set<String>()
             var sawFull = try ingest(adapter, response, into: &activeKeys, context: context)
-            update(metadata, with: response)
+            // While draining a full snapshot the cursor is held back until every page has been
+            // ingested and reconciled: if a later page fails, the next pass restarts the snapshot
+            // instead of resuming as a delta and never reconciling rows absent from it.
+            update(metadata, with: response, persistCursor: !sawFull)
             try context.save()
             var changeCount = response.serverChanges.count
 
             while response.hasMore {
                 response = try await adapter.call(
-                    SyncRequestDTO(since: metadata.cursor, limit: limit, upserts: [], deletes: [])
+                    SyncRequestDTO(since: response.cursor, limit: limit, upserts: [], deletes: [])
                 )
                 sawFull =
                     try ingest(adapter, response, into: &activeKeys, context: context) || sawFull
-                update(metadata, with: response)
+                update(metadata, with: response, persistCursor: !sawFull)
                 try context.save()
                 changeCount += response.serverChanges.count
             }
 
             if sawFull {
                 try reconcileFullSnapshot(adapter, activeKeys: activeKeys, context: context)
+                metadata.cursor = response.cursor
                 try context.save()
             }
 
@@ -184,7 +196,7 @@ extension SyncEngine {
                 .completed(
                     resource: resource,
                     mode: response.mode,
-                    applied: response.applied.count,
+                    applied: applied.count,
                     serverChanges: changeCount,
                     durationMs: durationMs
                 )

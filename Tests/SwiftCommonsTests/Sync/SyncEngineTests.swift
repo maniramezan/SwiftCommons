@@ -323,6 +323,108 @@ struct SyncEngineTests {
         #expect(metadata.cursor == "fresh")
     }
 
+    @Test func fullResyncKeepsAcksFromThePushResponse() async throws {
+        let container = try SyncFixtures.makeContainer()
+        let context = container.mainContext
+        let item = SyncItem(key: "run", title: "Run", syncState: .pendingCreate)
+        context.insert(item)
+        try context.save()
+
+        let callCount = Box<Int>(0)
+        let adapter = SyncFixtures.adapter { _ in
+            let call = callCount.value
+            callCount.value += 1
+            if call == 0 {
+                // The server accepted the push but the cursor is too old for a delta.
+                return SyncFixtures.response(
+                    applied: [
+                        SyncAppliedDTO(
+                            key: "run", id: 101, status: "created", updatedAt: 5, reason: nil)
+                    ],
+                    fullResyncRequired: true
+                )
+            }
+            return SyncFixtures.response(
+                mode: "full",
+                serverChanges: [
+                    ItemChange(key: "run", title: "Run", serverId: 101, isDeleted: false)
+                ],
+                cursor: "fresh"
+            )
+        }
+        try await SyncEngine(modelContainer: container).sync(adapter)
+
+        let items = try context.fetch(FetchDescriptor<SyncItem>())
+        #expect(items.count == 1)
+        #expect(item.syncState == .synced)
+        #expect(item.serverId == 101)
+        #expect(item.updatedAt == Date(timeIntervalSince1970: 5))
+    }
+
+    @Test func failedFullSnapshotPageDoesNotAdvanceTheCursor() async throws {
+        struct TransportError: Error {}
+        let container = try SyncFixtures.makeContainer()
+        let context = container.mainContext
+
+        let requestedCursors = Box<[String?]>([])
+        let failSecondPage = Box<Bool>(true)
+        let adapter = SyncFixtures.adapter { request in
+            requestedCursors.value.append(request.since)
+            if request.since == nil {
+                return SyncFixtures.response(
+                    mode: "full",
+                    serverChanges: [
+                        ItemChange(key: "alpha", title: "Alpha", serverId: 1, isDeleted: false)
+                    ],
+                    cursor: "page-1",
+                    hasMore: true
+                )
+            }
+            if failSecondPage.value { throw TransportError() }
+            return SyncFixtures.response(mode: "full", cursor: "page-2")
+        }
+        let engine = SyncEngine(modelContainer: container)
+
+        await #expect(throws: TransportError.self) { try await engine.sync(adapter) }
+        let metadata = try #require(try context.fetch(FetchDescriptor<SyncMetadata>()).first)
+        #expect(metadata.cursor == nil)
+
+        // The retry restarts the snapshot from the beginning, then commits the final cursor.
+        failSecondPage.value = false
+        try await engine.sync(adapter)
+        #expect(requestedCursors.value == [nil, "page-1", nil, "page-1"])
+        #expect(metadata.cursor == "page-2")
+    }
+
+    @Test func completedEventCountsAcksFromThePushPageAcrossPagination() async throws {
+        let container = try SyncFixtures.makeContainer()
+        let context = container.mainContext
+        context.insert(SyncItem(key: "run", title: "Run", syncState: .pendingCreate))
+        try context.save()
+
+        let adapter = SyncFixtures.adapter { request in
+            if request.since == nil {
+                return SyncFixtures.response(
+                    applied: [
+                        SyncAppliedDTO(
+                            key: "run", id: 1, status: "created", updatedAt: nil, reason: nil)
+                    ],
+                    cursor: "page-1",
+                    hasMore: true
+                )
+            }
+            return SyncFixtures.response(cursor: "page-2")
+        }
+        let log = EventLog()
+        let engine = SyncEngine(modelContainer: container, events: { await log.record($0) })
+        try await engine.sync(adapter)
+
+        let appliedCounts = log.events.compactMap { event -> Int? in
+            if case .completed(_, _, let applied, _, _) = event { applied } else { nil }
+        }
+        #expect(appliedCounts == [1])
+    }
+
     // MARK: Events
 
     @Test func startedAndCompletedEventsAreEmitted() async throws {
