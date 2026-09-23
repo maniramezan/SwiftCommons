@@ -7,17 +7,17 @@ extension Logger {
 
     // MARK: Automatic Category Creation
 
-    /// Creates a logger with automatic category derived from the type
+    /// Creates a logger whose category is the name of `type`.
     /// - Parameters:
     ///   - subsystem: The subsystem identifier (usually package name)
-    ///   - type: The type to use for category (defaults to caller's type)
-    ///   - file: The file path (automatically filled by compiler)
+    ///   - type: The type whose name becomes the category.
+    ///   - file: Unused; retained for source compatibility.
     /// - Returns: Configured Logger instance
     ///
     /// Usage:
     /// ```swift
-    /// private let logger = Logger.forType(subsystem: "SwiftUICalendar")
-    /// // Category will be "CalendarViewModel" if called from CalendarViewModel
+    /// private let logger = Logger.forType(subsystem: "SwiftUICalendar", CalendarViewModel.self)
+    /// // Category is "CalendarViewModel"
     /// ```
     public static func forType(
         subsystem: String,
@@ -97,11 +97,17 @@ extension Logger {
 
 extension Logger {
 
-    /// Log an error with context information
+    /// Log an error with context information.
+    ///
+    /// `message`, `context`, the error's type, and its `NSError` domain and code are logged
+    /// **public** so they survive in production logs and sysdiagnoses; only the error's
+    /// `localizedDescription` (which can embed user data such as file paths) is private. Keep
+    /// `context` to identifiers and non-sensitive state — never user-entered values.
+    ///
     /// - Parameters:
     ///   - message: Error description
     ///   - error: The error object
-    ///   - context: Additional context (e.g., function name, parameters)
+    ///   - context: Additional non-sensitive context (e.g. feature, action, IDs)
     ///   - file: Source file (automatically filled)
     ///   - function: Function name (automatically filled)
     ///   - line: Line number (automatically filled)
@@ -119,16 +125,21 @@ extension Logger {
         line: Int = #line
     ) {
         let fileName = (file as NSString).lastPathComponent
-        if let context = context {
-            self.error(
-                "\(message) | Context: \(context) | Error: \(error.localizedDescription) | \(fileName):\(line)"
-            )
-        } else {
-            self.error("\(message) | Error: \(error.localizedDescription) | \(fileName):\(line)")
-        }
+        let summary = ErrorLogSummary(error)
+        let contextSuffix = context.map { " | Context: \($0)" } ?? ""
+        self.error(
+            """
+            \(message, privacy: .public)\(contextSuffix, privacy: .public) \
+            | Error: \(summary.identity, privacy: .public) \
+            (\(summary.localizedDescription, privacy: .private)) \
+            | \(fileName, privacy: .public):\(line, privacy: .public) \(function, privacy: .public)
+            """
+        )
     }
 
     /// Log function entry (useful for debugging control flow)
+    ///
+    /// The function name and `message` are logged public; keep `message` free of user data.
     /// - Parameters:
     ///   - message: Optional message to append
     ///   - function: Function name (automatically filled)
@@ -142,13 +153,15 @@ extension Logger {
         function: String = #function
     ) {
         if message.isEmpty {
-            self.debug("→ \(function)")
+            self.debug("→ \(function, privacy: .public)")
         } else {
-            self.debug("→ \(function) | \(message)")
+            self.debug("→ \(function, privacy: .public) | \(message, privacy: .public)")
         }
     }
 
     /// Log function exit (useful for debugging control flow)
+    ///
+    /// The function name and `message` are logged public; keep `message` free of user data.
     /// - Parameters:
     ///   - message: Optional message to append
     ///   - function: Function name (automatically filled)
@@ -162,9 +175,24 @@ extension Logger {
         function: String = #function
     ) {
         if message.isEmpty {
-            self.debug("← \(function)")
+            self.debug("← \(function, privacy: .public)")
         } else {
-            self.debug("← \(function) | \(message)")
+            self.debug("← \(function, privacy: .public) | \(message, privacy: .public)")
         }
+    }
+}
+
+/// The non-sensitive, publicly loggable identity of an error, plus its private description.
+struct ErrorLogSummary: Equatable {
+    /// Type, domain, and code, e.g. `URLError (NSURLErrorDomain -1009)`.
+    let identity: String
+    /// The error's `localizedDescription`; may contain user data, so log it privately.
+    let localizedDescription: String
+
+    init(_ error: Error) {
+        let nsError = error as NSError
+        identity =
+            "\(String(reflecting: type(of: error))) (\(nsError.domain) \(nsError.code))"
+        localizedDescription = error.localizedDescription
     }
 }
