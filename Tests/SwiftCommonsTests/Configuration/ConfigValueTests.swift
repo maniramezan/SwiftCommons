@@ -13,6 +13,9 @@ struct ConfigValueTests {
         #expect(ConfigValue.string("1").boolValue)
         #expect(!ConfigValue.string("false").boolValue)
         #expect(!ConfigValue.string("anything").boolValue)
+        #expect(ConfigValue.string("yes").boolValue)
+        #expect(ConfigValue.string(" on\n").boolValue)
+        #expect(!ConfigValue.string("no").boolValue)
         #expect(ConfigValue.int(2).boolValue)
         #expect(!ConfigValue.int(0).boolValue)
         #expect(ConfigValue.double(0.5).boolValue)
@@ -35,6 +38,17 @@ struct ConfigValueTests {
         #expect(ConfigValue.double(3.9).intValue == 3)
         #expect(ConfigValue.bool(true).intValue == 1)
         #expect(ConfigValue.bool(false).intValue == 0)
+        #expect(ConfigValue.string(" 42\n").intValue == 42)
+    }
+
+    @Test
+    func intCoercionOfNonFiniteAndOutOfRangeDoublesDoesNotTrap() {
+        #expect(ConfigValue.double(.nan).intValue == 0)
+        #expect(ConfigValue.double(.infinity).intValue == .max)
+        #expect(ConfigValue.double(-.infinity).intValue == .min)
+        #expect(ConfigValue.double(1e30).intValue == .max)
+        #expect(ConfigValue.double(-1e30).intValue == .min)
+        #expect(ConfigValue.double(-3.9).intValue == -3)
     }
 
     @Test

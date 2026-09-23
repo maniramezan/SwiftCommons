@@ -36,6 +36,14 @@ struct StringParsableTests {
         #expect(String(parsing: "anything at all") == "anything at all")
     }
 
+    @Test("Numeric parsing ignores surrounding whitespace; String keeps it")
+    func numericParsingTrimsWhitespace() {
+        #expect(Int(parsing: " 42\n") == 42)
+        #expect(Double(parsing: "\t2.5 ") == 2.5)
+        #expect(Int(parsing: "4 2") == nil)
+        #expect(String(parsing: "  padded  ") == "  padded  ")
+    }
+
     @Test("Boolean flag constants and String(flag:) round-trip through Bool(parsing:)")
     func booleanFlagStrings() {
         #expect(String.enabledFlag == "1")
