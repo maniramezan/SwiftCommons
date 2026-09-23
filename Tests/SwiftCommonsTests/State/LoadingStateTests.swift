@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import SwiftCommons
@@ -87,5 +88,44 @@ struct LoadingErrorTests {
         #expect(!error.message.contains("Unauthorized"))
         #expect(error.isRetryable)
         #expect(!error.requiresSignIn)
+    }
+
+    @Test
+    func loadReturnsIdleWhenTaskIsCancelled() async {
+        let task = Task {
+            await LoadingState<Int>.load {
+                try await Task.sleep(for: .seconds(60))
+                return 1
+            }
+        }
+        task.cancel()
+        #expect(await task.value == .idle)
+    }
+
+    @Test(arguments: [CancellationError() as any Error, URLError(.cancelled)])
+    func loadReturnsIdleForCancellationErrors(error: any Error) async {
+        let state = await LoadingState<Int>.load { throw error }
+        #expect(state == .idle)
+    }
+
+    @Test
+    func loadStillFailsForOtherURLErrors() async {
+        let state = await LoadingState<Int>.load { throw URLError(.notConnectedToInternet) }
+        #expect(state.error != nil)
+    }
+
+    @MainActor
+    @Test
+    func loadCanCaptureMainActorStateFromATask() async {
+        @MainActor final class ViewModel {
+            var fetchCount = 0
+            func fetch() async -> Int {
+                fetchCount += 1
+                return fetchCount
+            }
+        }
+        let viewModel = ViewModel()
+        let task = Task { await LoadingState<Int>.load { await viewModel.fetch() } }
+        #expect(await task.value == .loaded(1))
     }
 }
