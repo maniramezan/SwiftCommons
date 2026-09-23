@@ -42,14 +42,26 @@ public enum LoadingState<Value: Equatable & Sendable>: Equatable, Sendable {
     /// message. Call sites that need error-type-specific messaging should
     /// catch the error themselves and construct a ``LoadingError`` directly.
     ///
+    /// Cancellation is not a failure: if the surrounding task is cancelled, or the
+    /// operation throws `CancellationError` or `URLError.cancelled`, the result is
+    /// ``idle`` — so a SwiftUI `.task` cancelled when its view disappears never
+    /// flashes an error, and the next appearance loads again.
+    ///
+    /// The operation runs on the caller's actor, so it may capture non-`Sendable`
+    /// state (for example a `@MainActor` view model).
+    ///
     /// - Parameter operation: The asynchronous, throwing operation to run.
-    /// - Returns: ``loaded(_:)`` with the operation's result, or
-    ///   ``failed(_:)`` if it threw.
-    public static func load(
-        _ operation: () async throws -> Value
-    ) async -> LoadingState<Value> {
+    /// - Returns: ``loaded(_:)`` with the operation's result, ``idle`` if the
+    ///   work was cancelled, or ``failed(_:)`` if it threw.
+    nonisolated(nonsending)
+        public static func load(
+            _ operation: nonisolated(nonsending) () async throws -> Value
+        ) async -> LoadingState<Value>
+    {
         do {
             return .loaded(try await operation())
+        } catch  where Task.isCancelled || LoadingError.isCancellation(error) {
+            return .idle
         } catch {
             return .failed(LoadingError(from: error))
         }
@@ -86,6 +98,14 @@ public struct LoadingError: Error, Equatable, Sendable {
     }
 
     // MARK: Public
+
+    /// Whether `error` represents cancellation rather than a failure:
+    /// `CancellationError` or `URLError.cancelled`.
+    public static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
+        return false
+    }
 
     /// A message safe to show to users.
     public let message: String
