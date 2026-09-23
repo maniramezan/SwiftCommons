@@ -41,7 +41,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   - `Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncableModel`, `SyncMetadata`, DTOs)
 - `Sources/SwiftCommonsTestSupport`: a separate library product with test-only helpers for consumers
   of `SwiftCommons` (fake clock, `LoadingState` assertions, in-memory SwiftData context helper, and
-  generic sync test fixtures). Depends on `SwiftCommons`; never add app-facing (non-test) APIs here.
+  sync fixtures: `makeInMemorySyncContainer(for:)`, `SyncResponseDTO.fixture(...)`,
+  `SyncAppliedDTO.fixture(...)`). Depends on `SwiftCommons`; never add app-facing (non-test) APIs here.
 - `Tests/SwiftCommonsTests`: Swift Testing coverage mirroring the `Sources` structure (covers both
   `SwiftCommons` and `SwiftCommonsTestSupport`).
 
@@ -105,7 +106,9 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   against code under test that hasn't registered its sleep yet); `expectLoaded(_:)`/`expectFailed(_:)`
   for asserting on `LoadingState`; `makeInMemoryModelContext(for:)` for a ready-to-use SwiftData
   `ModelContext`; and `Box<Value>` (`@MainActor` mutable capture reference) plus `recordingCall(returning:into:)`
-  for recording requests made through a `SyncResourceAdapter`'s `call:` closure in tests.
+  for recording requests made through a `SyncResourceAdapter`'s `call:` closure in tests;
+  `makeInMemorySyncContainer(for:)` (adds `SyncMetadata` to the schema automatically) and
+  `SyncResponseDTO.fixture(...)` / `SyncAppliedDTO.fixture(...)` DTO builders with test defaults.
 
 ## Working Agreement
 

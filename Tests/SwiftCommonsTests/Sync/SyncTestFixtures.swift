@@ -55,8 +55,7 @@ typealias ItemResponse = SyncResponseDTO<ItemChange>
 
 enum SyncFixtures {
     static func makeContainer() throws -> ModelContainer {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: SyncItem.self, SyncMetadata.self, configurations: config)
+        try makeInMemorySyncContainer(for: SyncItem.self)
     }
 
     /// Builds an adapter whose transport is the supplied `call` closure.
@@ -125,8 +124,7 @@ enum SyncFixtures {
         fullResyncRequired: Bool = false,
         serverInfo: [String: String]? = nil
     ) -> ItemResponse {
-        ItemResponse(
-            syncVersion: 1,
+        ItemResponse.fixture(
             mode: mode,
             applied: applied,
             serverChanges: serverChanges,

@@ -8,11 +8,15 @@ import Foundation
 /// `@MainActor`-isolated, so tests that run on the main actor (the default
 /// for Swift Testing) can freely read and write it:
 ///
-///     let requests = Box<[Request]>([])
-///     let adapter = SyncFixtures.adapter(call: { request in
-///         requests.value.append(request)
-///         return .init(...)
-///     })
+///     let requests = Box<[SyncRequestDTO<ItemUpsert, ItemDelete>]>([])
+///     let adapter = SyncResourceAdapter(
+///         // ...
+///         call: { request in
+///             requests.value.append(request)
+///             return .fixture(cursor: "cursor-1")
+///         },
+///         // ...
+///     )
 @MainActor
 public final class Box<Value> {
     /// The current captured value.

@@ -17,7 +17,7 @@ Add SwiftCommons as a Swift Package Manager dependency:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.3.0")
+    .package(url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.8.4")
 ]
 ```
 
@@ -196,6 +196,50 @@ let semaphore = AsyncSemaphore(value: 3) // cap concurrent requests
 let response = try await semaphore.withPermit { try await urlSession.data(from: url) }
 ```
 
+### Sync (SwiftData)
+
+`SyncEngine` drives offline sync for SwiftData rows that conform to `SyncableModel`. Each resource
+plugs in with one `SyncResourceAdapter` (a struct of closures); the engine owns the ack guard,
+pending guard, pagination, full-snapshot reconciliation, and full-resync recovery.
+
+```swift
+@Model final class Item: SyncableModel {
+    var key: String
+    var title: String
+    var serverId: Int?
+    var updatedAt: Date
+    var isTombstoned: Bool      // never name this `isDeleted` on a @Model
+    var syncState: SyncState
+    var localUpdatedAt: Date
+    // init ...
+}
+
+// SyncMetadata stores each resource's cursor — it must be in your schema.
+let container = try ModelContainer.make(for: Item.self, SyncMetadata.self)
+let engine = SyncEngine(modelContainer: container, events: { analytics.track($0) })
+
+let items = SyncResourceAdapter<Item, ItemUpsert, ItemDelete, ItemChange>(
+    resourceName: "items",
+    fetchPending: { try $0.fetch(FetchDescriptor<Item>(predicate: #Predicate { $0.syncState != .synced })) },
+    businessKey: { $0.key },
+    makeUpserts: { $0.filter { !$0.isTombstoned }.map(ItemUpsert.init) },
+    makeDeletes: { $0.filter(\.isTombstoned).map(ItemDelete.init) },
+    call: { try await api.sync("items", $0) },
+    findExisting: { change, context in /* fetch by change.key */ },
+    changeKey: { $0.key },
+    isChangeDeleted: { $0.isDeleted },
+    upsertFromChange: { change, existing, context in /* apply or insert */ },
+    fetchActive: { try $0.fetch(FetchDescriptor<Item>(predicate: #Predicate { !$0.isTombstoned })) },
+    purgeSynced: { try $0.delete(model: Item.self, where: #Predicate { $0.syncState == .synced }) }
+)
+
+try await engine.syncAll([AnySyncResource(items)])
+```
+
+`SyncMetadata` uses `@Attribute(.unique)`, which CloudKit-backed containers don't support — keep
+it in a local (non-CloudKit) store. See the *Syncing SwiftData Resources* DocC article for the
+full contract.
+
 ### Persistence (SwiftData)
 
 ```swift
@@ -219,6 +263,11 @@ let context = try makeInMemoryModelContext(for: Item.self)
 
 let state = await LoadingState.load { try await fetchItems() }
 expectLoaded(state) // records a test failure if `state` isn't `.loaded`
+
+// Sync: a container that already includes SyncMetadata, plus DTO builders.
+let container = try makeInMemorySyncContainer(for: Item.self)
+let response = SyncResponseDTO<ItemChange>.fixture(
+    applied: [.fixture(key: "run", id: 101, status: "created")], cursor: "c1")
 ```
 
 ## Agent skills

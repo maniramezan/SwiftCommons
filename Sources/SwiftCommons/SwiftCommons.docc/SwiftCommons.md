@@ -67,13 +67,17 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   plug in as ``SyncResourceAdapter`` values.
 
 A separate `SwiftCommonsTestSupport` product ships test-only helpers (a fake
-clock, `LoadingState` assertions, an in-memory SwiftData context helper, and
-generic sync test fixtures) for consumers' test targets.
+clock, `LoadingState` assertions, an in-memory SwiftData context helper,
+`makeInMemorySyncContainer(for:)`, and `SyncResponseDTO`/`SyncAppliedDTO` `.fixture(...)` builders) for consumers' test targets.
 
 Foundation, Swift standard library, and OSLog extensions are listed under
 **Extensions** below.
 
 ## Topics
+
+### Guides
+
+- <doc:SyncingSwiftDataResources>
 
 ### Parsing
 
@@ -100,9 +104,19 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 - ``SwiftCommonsClock``
 - ``ContinuousSwiftCommonsClock``
 
+### Dates & Calendars
+
+- ``CalendarArithmetic``
+- ``MonthIdentifier``
+
 ### Formatting
 
 - ``DurationFormatter``
+- ``FormatterCache``
+
+### Diagnostics
+
+- ``SignpostRecorder``
 
 ### Sync
 
