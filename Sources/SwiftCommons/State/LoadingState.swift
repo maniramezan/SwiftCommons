@@ -53,11 +53,11 @@ public enum LoadingState<Value: Equatable & Sendable>: Equatable, Sendable {
     /// - Parameter operation: The asynchronous, throwing operation to run.
     /// - Returns: ``loaded(_:)`` with the operation's result, ``idle`` if the
     ///   work was cancelled, or ``failed(_:)`` if it threw.
-    nonisolated(nonsending)
-        public static func load(
-            _ operation: nonisolated(nonsending) () async throws -> Value
-        ) async -> LoadingState<Value>
-    {
+    // swift-format-ignore: swift-format 6.2 (CI) and 6.4 disagree on spacing around
+    // `nonisolated(nonsending)` in a function type.
+    nonisolated(nonsending) public static func load(
+        _ operation: nonisolated(nonsending) () async throws -> Value
+    ) async -> LoadingState<Value> {
         do {
             return .loaded(try await operation())
         } catch  where Task.isCancelled || LoadingError.isCancellation(error) {
