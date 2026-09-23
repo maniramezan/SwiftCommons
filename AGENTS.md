@@ -126,6 +126,13 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - Test support (separate product): `Sources/SwiftCommonsTestSupport/`
 - Tests: `Tests/SwiftCommonsTests/`
 
+## Consumer Agent Skills
+
+`skills/*/SKILL.md` are skills.sh skills for *apps that depend on* SwiftCommons (not guidance for
+working in this repo). When a public API is added, renamed, or changes behavior, update the
+matching skill (`swiftcommons` API map/pitfalls, `swiftcommons-sync`, `swiftcommons-testing`) in
+the same PR.
+
 ## When Updating
 
 - Add or update tests under `Tests/SwiftCommonsTests` for behavior changes.
