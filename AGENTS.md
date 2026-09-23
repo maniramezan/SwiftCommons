@@ -82,7 +82,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   `ConfigValue.propertyList(_:)` loads from a decoded plist dictionary, detecting real `Bool`
   values via `CFGetTypeID`/`CFBooleanGetTypeID` since NSNumber bridging makes `0`/`1` respond
   `true` to a naive `as? Bool` check.
-- `AsyncLock` is a FIFO async mutex for serializing work across `await` suspension points.
+- `AsyncLock` is a FIFO async mutex for serializing work across `await` suspension points; use
+  `withLock { ... }` (releases on throw) rather than hand-paired `lock()`/`unlock()`. Not reentrant.
 - `AsyncSemaphore` is a counting async semaphore (`wait()`/`signal()`/`withPermit { ... }`) for
   capping concurrent access (e.g. limiting parallel network requests).
 - `Debouncer` (actor) coalesces rapid repeated calls into one action after a quiet period.

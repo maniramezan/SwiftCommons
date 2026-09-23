@@ -82,4 +82,23 @@ struct DebouncerTests {
 
         #expect(await recorder.values == [])
     }
+
+    @Test
+    func deallocatingTheDebouncerCancelsThePendingAction() async {
+        let clock = ManualSwiftCommonsClock()
+        let recorder = Recorder()
+        var debouncer: Debouncer? = Debouncer(delay: .milliseconds(30), clock: clock)
+
+        await debouncer?.run { await recorder.record(1) }
+        while await clock.waiterCount == 0 {
+            await Task.yield()
+        }
+        debouncer = nil
+
+        await clock.advance(by: .milliseconds(30))
+        await Task.yield()
+
+        #expect(debouncer == nil)
+        #expect(await recorder.values == [])
+    }
 }

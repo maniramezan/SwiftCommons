@@ -7,11 +7,15 @@ import Foundation
 ///
 ///     let debouncer = Debouncer(delay: .milliseconds(300))
 ///
-///     func searchFieldDidChange(_ query: String) {
-///         debouncer.run {
+///     func searchFieldDidChange(_ query: String) async {
+///         await debouncer.run {
 ///             await performSearch(query)
 ///         }
 ///     }
+///
+/// ``run(action:)`` is actor-isolated, so it must be awaited. From synchronous code,
+/// wrap it in a `Task`, keeping in mind that separate tasks may reach the actor out of
+/// order.
 ///
 /// Each call to ``run(action:)`` cancels any pending action scheduled by a
 /// previous call, then schedules the new action to run after `delay`. If the
@@ -50,6 +54,10 @@ public actor Debouncer {
             guard !Task.isCancelled else { return }
             await action()
         }
+    }
+
+    deinit {
+        task?.cancel()
     }
 
     /// Cancels any pending action without running it.

@@ -185,9 +185,12 @@ let data = try await withRetry(attempts: 3, delay: .seconds(1)) {
 }
 
 let debouncer = Debouncer(delay: .milliseconds(300))
-func searchFieldDidChange(_ query: String) {
-    debouncer.run { await performSearch(query) }
+func searchFieldDidChange(_ query: String) async {
+    await debouncer.run { await performSearch(query) }
 }
+
+let lock = AsyncLock() // serialize work that spans awaits
+let result = try await lock.withLock { try await refreshToken() }
 
 let semaphore = AsyncSemaphore(value: 3) // cap concurrent requests
 let response = try await semaphore.withPermit { try await urlSession.data(from: url) }
