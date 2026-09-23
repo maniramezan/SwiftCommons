@@ -10,4 +10,4 @@ if [ ! -d "$docc_site_dir" ]; then
 fi
 
 echo "Serving $docc_site_dir at http://127.0.0.1:${port}"
-python -m http.server "$port" --directory "$docc_site_dir"
+python3 -m http.server "$port" --directory "$docc_site_dir"
