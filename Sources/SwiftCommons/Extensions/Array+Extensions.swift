@@ -2,7 +2,8 @@ import Foundation
 
 extension Array {
 
-    /// Try to access array at the given index. If exists, it returns the element at the index. Otherwise, nil.
+    /// Try to access array at the given index. If exists, it returns the element at the index. Otherwise,
+    /// `defaultValue`.
     ///
     ///     let arr = ["a", "b", "c"]
     ///     print(arr[1, default: "d"]) // "b"
@@ -50,9 +51,9 @@ extension Array {
             + Array(repeating: defaultValue(), count: range.count - newRange.count)
     }
 
-    /// Access a subsequence of the array with the given range. If the range is out of bounds, the missing elements will be filled with the default value.
+    /// Access a subsequence of the array with the given range, clamped to the array's bounds.
     /// - Parameter range: Range of indices.
-    /// - Returns: A subsequence of the array with the given range. If the range is out of bounds, the missing elements will be filled with the default value.
+    /// - Returns: The elements of `range` that exist in the array; out-of-bounds indices are dropped.
     @inlinable
     public subscript(safe range: Range<Index>) -> Self.SubSequence {
         return self[range.clamped(to: indices)]
@@ -69,9 +70,9 @@ extension Array {
         self[Range(range), default: defaultValue()]
     }
 
-    /// Access a subsequence of the array with the given range. If the range is out of bounds, the missing elements will be filled with the default value.
+    /// Access a subsequence of the array with the given closed range, clamped to the array's bounds.
     /// - Parameter range: Range of indices.
-    /// - Returns: A subsequence of the array with the given range. If the range is out of bounds, the missing elements will be filled with the default value.
+    /// - Returns: The elements of `range` that exist in the array; out-of-bounds indices are dropped.
     @inlinable
     public subscript(safe range: ClosedRange<Index>) -> Self.SubSequence {
         self[safe: Range(range)]
