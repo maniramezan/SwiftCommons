@@ -39,11 +39,11 @@ public actor AsyncLock {
     /// `body` runs on the caller's actor, so it may capture non-`Sendable` state.
     /// - Parameter body: The critical section.
     /// - Returns: Whatever `body` returns.
-    nonisolated(nonsending)
-        public func withLock<Result>(
-            _ body: nonisolated(nonsending) () async throws -> Result
-        ) async rethrows -> Result
-    {
+    // swift-format-ignore: swift-format 6.2 (CI) and 6.4 disagree on spacing around
+    // `nonisolated(nonsending)` in a function type.
+    nonisolated(nonsending) public func withLock<Result>(
+        _ body: nonisolated(nonsending) () async throws -> Result
+    ) async rethrows -> Result {
         await lock()
         do {
             let result = try await body()
