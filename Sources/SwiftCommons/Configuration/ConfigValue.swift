@@ -17,12 +17,12 @@ public enum ConfigValue: Sendable, Hashable {
 
     // MARK: - Convenience accessors
 
-    /// The value as a `Bool`. Strings of `"true"` or `"1"` and non-zero
-    /// numbers are `true`.
+    /// The value as a `Bool`. Strings are read with `Bool(parsing:)` (so `true`/`1`/`yes`/`on`
+    /// are `true`), unparseable strings are `false`, and non-zero numbers are `true`.
     public var boolValue: Bool {
         switch self {
         case .bool(let v): v
-        case .string(let v): v.lowercased() == "true" || v == "1"
+        case .string(let v): Bool(parsing: v) ?? false
         case .int(let v): v != 0
         case .double(let v): v != 0
         }
@@ -39,13 +39,14 @@ public enum ConfigValue: Sendable, Hashable {
     }
 
     /// The value as an `Int`. Unparseable strings coerce to `0`; doubles are
-    /// truncated.
+    /// truncated toward zero, `NaN` coerces to `0`, and values beyond `Int`'s range
+    /// (including infinities) clamp to `Int.min` / `Int.max`.
     public var intValue: Int {
         switch self {
         case .bool(let v): v ? 1 : 0
-        case .string(let v): Int(v) ?? 0
+        case .string(let v): Int(parsing: v) ?? 0
         case .int(let v): v
-        case .double(let v): Int(v)
+        case .double(let v): Self.clampedInt(v)
         }
     }
 
@@ -53,10 +54,21 @@ public enum ConfigValue: Sendable, Hashable {
     public var doubleValue: Double {
         switch self {
         case .bool(let v): v ? 1.0 : 0.0
-        case .string(let v): Double(v) ?? 0.0
+        case .string(let v): Double(parsing: v) ?? 0.0
         case .int(let v): Double(v)
         case .double(let v): v
         }
+    }
+
+    /// Truncates `value` toward zero without trapping: `Int(_:)` crashes on `NaN`,
+    /// infinities, and anything outside `Int`'s range, all of which a remote config can
+    /// deliver.
+    private static func clampedInt(_ value: Double) -> Int {
+        if value.isNaN { return 0 }
+        // `Double(Int.max)` rounds up to 2^63, so `>=` catches the first unrepresentable value.
+        if value >= Double(Int.max) { return .max }
+        if value <= Double(Int.min) { return .min }
+        return Int(value)
     }
 
     // MARK: - String decoding
