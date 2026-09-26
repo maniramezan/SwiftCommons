@@ -89,6 +89,9 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   capping concurrent access (e.g. limiting parallel network requests).
 - `Debouncer` (actor) coalesces rapid repeated calls into one action after a quiet period.
 - `withRetry(attempts:delay:clock:operation:)` retries a throwing async operation with a fixed delay.
+- `withRetry(attempts:backoff:clock:shouldRetry:operation:)` takes a `RetryBackoff` (`.constant`,
+  or `.exponential(baseDelay:multiplier:maxDelay:jitter:jitterSource:)`, capped before jitter)
+  and a `shouldRetry` predicate; the fixed-delay overload is built on `.constant`.
 - `SwiftCommonsClock` is the injectable clock protocol behind `withRetry` and `Debouncer`'s delays
   (default: `ContinuousSwiftCommonsClock`, backed by `Task.sleep(for:)`). Both APIs default to the
   real clock, so existing call sites are unaffected; tests can inject

@@ -65,6 +65,8 @@ CSV helpers are opt-in via the `CSV` package trait:
 - **Concurrency** — `AsyncLock` (FIFO mutex), `AsyncSemaphore` (counting semaphore), `Debouncer`,
   and `withRetry(...)` — all built on the injectable `SwiftCommonsClock` abstraction so consumers
   can substitute a fake clock in tests.
+- **Retry backoff** — `RetryBackoff` (`.constant`, `.exponential` with cap and jitter) and a
+  `shouldRetry` predicate for `withRetry(attempts:backoff:clock:shouldRetry:operation:)`.
 - **CSV** — lightweight CSV parsing/serialization (behind the `CSV` package trait).
 - **Persistence** — `ModelContainer.make(for:inMemory:)`, a thin SwiftData bootstrap helper for
   apps, previews, and tests.
