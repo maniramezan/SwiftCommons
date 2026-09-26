@@ -63,7 +63,7 @@ CSV helpers are opt-in via the `CSV` package trait:
   loaders for `ProcessInfo.environment` and decoded property lists, plus a `ConfigValueType` tag and
   `ConfigValue(string:valueType:)` for decoding a textual value whose type is known separately.
 - **Concurrency** — `AsyncLock` (FIFO mutex), `AsyncSemaphore` (counting semaphore), `Debouncer`,
-  and `withRetry(...)` — all built on the injectable `SwiftCommonsClock` abstraction so consumers
+  and `withRetry(...)` — all built on the injectable `DelayClock` abstraction so consumers
   can substitute a fake clock in tests.
 - **Retry backoff** — `RetryBackoff` (`.constant`, `.exponential` with cap and jitter) and a
   `shouldRetry` predicate for `withRetry(attempts:backoff:clock:shouldRetry:operation:)`.
@@ -256,7 +256,7 @@ Add the `SwiftCommonsTestSupport` product to your test target to get:
 ```swift
 import SwiftCommonsTestSupport
 
-let clock = ManualSwiftCommonsClock()
+let clock = ManualClock()
 let debouncer = Debouncer(delay: .seconds(1), clock: clock)
 // ... trigger debounced work, then:
 await clock.advance(by: .seconds(1)) // resumes the pending action deterministically

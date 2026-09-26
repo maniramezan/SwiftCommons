@@ -20,8 +20,8 @@ import Foundation
 ///   - delay: The delay awaited between attempts. Not applied after the final
 ///     attempt. Defaults to `.zero`.
 ///   - clock: The clock used to wait between attempts. Defaults to
-///     ``ContinuousSwiftCommonsClock``. Tests can inject a fake clock (see
-///     `ManualSwiftCommonsClock` in `SwiftCommonsTestSupport`) to avoid real
+///     ``LiveClock``. Tests can inject a fake clock (see
+///     `ManualClock` in `SwiftCommonsTestSupport`) to avoid real
 ///     delays.
 ///   - operation: The asynchronous, throwing operation to attempt.
 /// - Returns: The value returned by `operation` on its first successful attempt.
@@ -30,7 +30,7 @@ import Foundation
 public func withRetry<Value: Sendable>(
     attempts: Int,
     delay: Duration = .zero,
-    clock: some SwiftCommonsClock = ContinuousSwiftCommonsClock(),
+    clock: some DelayClock = LiveClock(),
     operation: @Sendable () async throws -> Value
 ) async throws -> Value {
     try await withRetry(
@@ -56,8 +56,8 @@ public func withRetry<Value: Sendable>(
 ///   - attempts: The maximum number of attempts, including the first. Must be at least `1`.
 ///   - backoff: The delay before each retry. See ``RetryBackoff``.
 ///   - clock: The clock used to wait between attempts. Defaults to
-///     ``ContinuousSwiftCommonsClock``. Tests can inject a fake clock (see
-///     `ManualSwiftCommonsClock` in `SwiftCommonsTestSupport`) to avoid real delays.
+///     ``LiveClock``. Tests can inject a fake clock (see
+///     `ManualClock` in `SwiftCommonsTestSupport`) to avoid real delays.
 ///   - shouldRetry: Decides whether a thrown error is worth retrying. Not called for the final
 ///     attempt's error. Defaults to retrying every error.
 ///   - operation: The asynchronous, throwing operation to attempt.
@@ -67,7 +67,7 @@ public func withRetry<Value: Sendable>(
 public func withRetry<Value: Sendable>(
     attempts: Int,
     backoff: RetryBackoff,
-    clock: some SwiftCommonsClock = ContinuousSwiftCommonsClock(),
+    clock: some DelayClock = LiveClock(),
     shouldRetry: @Sendable (any Error) -> Bool = { _ in true },
     operation: @Sendable () async throws -> Value
 ) async throws -> Value {

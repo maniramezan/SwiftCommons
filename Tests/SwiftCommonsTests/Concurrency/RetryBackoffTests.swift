@@ -144,7 +144,7 @@ struct WithRetryBackoffTests {
 
     @Test
     func retryResumesOnlyOnceTheManualClockReachesTheDelay() async throws {
-        let clock = ManualSwiftCommonsClock()
+        let clock = ManualClock()
         let callCount = Counter()
 
         let task = Task {
@@ -192,7 +192,7 @@ struct WithRetryBackoffTests {
     }
 
     /// A clock that records each requested sleep and returns immediately.
-    private actor RecordingClock: SwiftCommonsClock {
+    private actor RecordingClock: DelayClock {
         private(set) var sleeps: [Duration] = []
 
         func sleep(for duration: Duration) async throws {
