@@ -190,15 +190,10 @@ struct ErrorLogSummary: Equatable {
     let localizedDescription: String
 
     init(_ error: Error) {
-        if let snapshot = error as? AnySendableError {
-            // Log the wrapped error's identity, not the wrapper's.
-            identity = "\(snapshot.typeName) (\(snapshot.domain) \(snapshot.code))"
-            localizedDescription = snapshot.localizedDescription
-            return
-        }
-        let nsError = error as NSError
-        identity =
-            "\(String(reflecting: type(of: error))) (\(nsError.domain) \(nsError.code))"
-        localizedDescription = error.localizedDescription
+        // Snapshots unwrap themselves, so this logs the wrapped error's identity for both a plain
+        // error and an `AnySendableError`, and keeps the format in one place.
+        let snapshot = AnySendableError(error)
+        identity = snapshot.identity
+        localizedDescription = snapshot.localizedDescription
     }
 }

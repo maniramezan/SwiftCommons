@@ -62,4 +62,14 @@ public struct AnySendableError: Error, Hashable, CustomStringConvertible, Locali
     public var errorDescription: String? {
         capturedLocalizedDescription
     }
+
+    /// The non-sensitive, publicly loggable identity of the original error: its type name, domain,
+    /// and code, e.g. `URLError (NSURLErrorDomain -1009)`.
+    ///
+    /// This is the single definition of an error's log identity; `Logger.error(_:error:context:)`
+    /// logs it, so a wrapped error is reported as the error it wraps rather than as
+    /// `AnySendableError`.
+    public var identity: String {
+        "\(typeName) (\(domain) \(code))"
+    }
 }

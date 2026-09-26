@@ -77,7 +77,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `DurationFormatter.format(seconds:)` renders compact `m:ss` / `h:mm:ss` durations.
 - `AnySendableError(error)` snapshots any error as a `Hashable` value (`typeName`, `domain`, `code`,
   `description`, and `localizedDescription` via `LocalizedError`); it doesn't nest, and
-  `ErrorLogSummary` logs the wrapped error's identity rather than the wrapper's.
+  `identity` is its `typeName (domain code)` log identity — the single definition of that format,
+  which `ErrorLogSummary` uses, so a wrapped error is logged as the error it wraps.
 - `LoadingState<Value>` models idle/loading/loaded/failed screen state; `LoadingState.load { ... }`
   runs a throwing async operation and maps the outcome; `LoadingError(from:)` redacts internal
   error details behind a generic, user-safe message.

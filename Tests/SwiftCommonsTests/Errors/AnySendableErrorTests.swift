@@ -65,4 +65,25 @@ struct AnySendableErrorTests {
             AnySendableError(URLError(.timedOut))
                 != AnySendableError(URLError(.notConnectedToInternet)))
     }
+
+    @Test
+    func identityCombinesTypeNameDomainAndCode() {
+        let snapshot = AnySendableError(URLError(.notConnectedToInternet))
+
+        #expect(snapshot.identity == "\(snapshot.typeName) (NSURLErrorDomain -1009)")
+    }
+
+    @Test
+    func identityOfASwiftErrorIsFullyQualified() {
+        let snapshot = AnySendableError(SampleError.missingRecord(id: 7))
+
+        #expect(snapshot.identity.hasSuffix(".SampleError (\(snapshot.domain) \(snapshot.code))"))
+    }
+
+    @Test
+    func rewrappingKeepsTheIdentity() {
+        let snapshot = AnySendableError(URLError(.timedOut))
+
+        #expect(AnySendableError(snapshot).identity == snapshot.identity)
+    }
 }
