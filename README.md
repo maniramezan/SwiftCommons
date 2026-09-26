@@ -51,6 +51,8 @@ CSV helpers are opt-in via the `CSV` package trait:
   `String(flag:)` boolean-flag helpers, `Bundle` app-version accessors, `UUID` byte/deterministic
   helpers, `Duration.timeInterval`, `URL` string-literal support, and locale-aware
   `NumberFormatter`/`FixedWidthInteger` helpers.
+- **Decoding diagnostics** — `DecodingError.debugSummary` (e.g.
+  `keyNotFound 'id' at items[2].user`) for logging decode failures without payload values.
 - **Dates & calendars** — `Calendar` date math (start of week/month, inclusive date ranges, month
   arithmetic), a thread-safe `DateFormatter` cache, and `Date.relativeDescription(...)` for
   human-readable relative times ("1 hour ago").

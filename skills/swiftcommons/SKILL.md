@@ -18,6 +18,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Optional fallback with lazy default | `optional.ifNil(expensiveDefault())` |
 | Trim / blank checks | `text.trimmed`, `text.isBlank`, `text.nilIfBlank` |
 | Parse config text | `Bool(parsing:)` (true/false, 1/0, yes/no, on/off), `Int(parsing:)`, `Double(parsing:)` |
+| Log a decode failure | `logger.errorPublic("Decode failed: \(decodingError.debugSummary)")` → `keyNotFound 'id' at items[2].user` |
 | Encode a boolean flag | `String(flag: true)` → `"1"` |
 | Remote/env/plist config | `ConfigValue.environment()`, `ConfigValue.propertyList(_:)`, `.boolValue` / `.intValue` / `.doubleValue` |
 | App version label | `Bundle.main.versionAndBuildNumber` → `"2.3.1 (142)"` |
