@@ -54,7 +54,9 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   ``ConfigValueType`` tag and ``ConfigValue/init(string:valueType:)`` for
   decoding a textual value whose type is known separately.
 - **Concurrency** — ``AsyncLock`` (FIFO mutex), ``AsyncSemaphore`` (counting
-  semaphore), ``Debouncer``, and ``withRetry(attempts:delay:clock:operation:)``,
+  semaphore), ``AsyncBroadcaster`` (one source to many `AsyncStream`s),
+  ``SingleFlight`` (coalesces concurrent identical requests per key),
+  ``Debouncer``, and ``withRetry(attempts:delay:clock:operation:)``,
   all built on the injectable ``DelayClock`` abstraction.
 - **CSV** — lightweight CSV parsing/serialization, gated behind the `CSV`
   package trait.
@@ -99,6 +101,8 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 
 - ``AsyncLock``
 - ``AsyncSemaphore``
+- ``AsyncBroadcaster``
+- ``SingleFlight``
 - ``Debouncer``
 - ``withRetry(attempts:delay:clock:operation:)``
 - ``DelayClock``
