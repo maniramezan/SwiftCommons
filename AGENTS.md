@@ -87,6 +87,10 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   `withLock { ... }` (releases on throw) rather than hand-paired `lock()`/`unlock()`. Not reentrant.
 - `AsyncSemaphore` is a counting async semaphore (`wait()`/`signal()`/`withPermit { ... }`) for
   capping concurrent access (e.g. limiting parallel network requests).
+- `AsyncBroadcaster<Element>` fans one source out to many `AsyncStream`s (`makeStream()`,
+  `yield(_:)`, `finish()`, optional latest-value replay). A final class guarded by
+  `OSAllocatedUnfairLock`: streams register synchronously in `makeStream()` and unregister
+  synchronously on termination, so an immediately cancelled consumer can't leak.
 - `Debouncer` (actor) coalesces rapid repeated calls into one action after a quiet period.
 - `withRetry(attempts:delay:clock:operation:)` retries a throwing async operation with a fixed delay.
 - `SwiftCommonsClock` is the injectable clock protocol behind `withRetry` and `Debouncer`'s delays
