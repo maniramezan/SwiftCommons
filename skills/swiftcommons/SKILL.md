@@ -40,6 +40,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Retry with exponential backoff / only some errors | `withRetry(attempts:backoff: .exponential(baseDelay:maxDelay:jitter:), shouldRetry:operation:)` |
 | SwiftData container | `try ModelContainer.make(for: A.self, B.self, inMemory: isPreview)` |
 | Measure hot paths | `SignpostRecorder(subsystem:category:).measure("name") { … }` |
+| Logging inside a library package (user-controlled level) | `LibraryLogger(subsystem:)` + `.category("network")`; users call `setLevel(.debug)` |
 | Offline sync | `SyncEngine` + `SyncResourceAdapter` — see the `swiftcommons-sync` skill |
 
 ## Logging conventions
