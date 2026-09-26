@@ -32,6 +32,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Calendar math | `calendar.startOfMonth(for:)`, `numberOfDays(in:year:)`, `dates(from:through:)`; era/leap-month-safe months via `CalendarArithmetic` + `MonthIdentifier` |
 | Screen loading state | `LoadingState<Value>` with `state = await .load { try await fetch() }` |
 | Serialize async work across awaits | `try await lock.withLock { … }` (`AsyncLock`) |
+| Deduplicate concurrent identical requests | `try await singleFlight.value(for: key) { … }` (`SingleFlight<Key, Value>`) |
 | Cap concurrency | `AsyncSemaphore(value: n).withPermit { … }` |
 | Debounce | `await Debouncer(delay: .milliseconds(300)).run { … }` |
 | Retry | `try await withRetry(attempts: 3, delay: .seconds(1)) { … }` |
