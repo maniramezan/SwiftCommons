@@ -76,6 +76,8 @@ CSV helpers are opt-in via the `CSV` package trait:
 - **Retry backoff** — `RetryBackoff` (`.constant`, `.exponential` with cap and jitter) and a
   `shouldRetry` predicate for `withRetry(attempts:backoff:clock:shouldRetry:operation:)`.
 - **CSV** — lightweight CSV parsing/serialization (behind the `CSV` package trait).
+- **Call coalescing** — `SingleFlight<Key, Value>`, which shares one in-flight async call among
+  concurrent callers for the same key.
 - **Persistence** — `ModelContainer.make(for:inMemory:)`, a thin SwiftData bootstrap helper for
   apps, previews, and tests.
 - **Sync** — a generic `SyncEngine` that drives offline, cross-device sync for SwiftData-backed

@@ -35,7 +35,7 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   - `Formatters`: `DurationFormatter` for human-readable durations
   - `State`: `LoadingState<Value>` async data-loading state machine
   - `Configuration`: `ConfigValue` for lenient cross-type config coercion, environment loading, and property-list loading
-  - `Concurrency`: `AsyncLock`, `AsyncSemaphore`, `Debouncer`, `withRetry(...)`, and the injectable `DelayClock` abstraction
+  - `Concurrency`: `AsyncLock`, `AsyncSemaphore`, `AsyncBroadcaster`, `SingleFlight`, `Debouncer`, `withRetry(...)`, and the injectable `DelayClock` abstraction
   - `CSV`: lightweight CSV parsing/serialization helpers (behind the `CSV` package trait)
   - `Persistence`: `ModelContainer.make(for:inMemory:)` SwiftData bootstrap helper
   - `Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncableModel`, `SyncMetadata`, DTOs)
@@ -113,6 +113,9 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   (default: `LiveClock`, backed by `Task.sleep(for:)`). Both APIs default to the
   real clock, so existing call sites are unaffected; tests can inject
   `ManualClock` (in `SwiftCommonsTestSupport`) to avoid real-time waits.
+- `SingleFlight<Key, Value>` (actor) coalesces concurrent `value(for:operation:)` calls per key into
+  one task; `cancel(_:)`/`cancelAll()` detach the flight, and a flight-ID check turns a cancelled
+  flight's late result into `CancellationError`. Nothing is cached after a flight finishes.
 - `CSV` provides lightweight CSV parsing/serialization; gated behind the `CSV` package trait to
   keep it opt-in.
 - `ModelContainer.make(for:inMemory:)` is a thin bootstrap over `ModelContainer.init(for:configurations:)`
