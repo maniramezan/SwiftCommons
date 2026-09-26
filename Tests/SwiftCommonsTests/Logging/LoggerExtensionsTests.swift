@@ -72,4 +72,11 @@ struct LoggerExtensionsTests {
             swiftErrorSummary.identity.hasPrefix(
                 "SwiftCommonsTests.LoggerExtensionsTests.SampleError ("))
     }
+
+    @Test
+    func errorLogSummaryReportsTheErrorWrappedInAnySendableError() {
+        let original = URLError(.notConnectedToInternet)
+        let summary = ErrorLogSummary(AnySendableError(original))
+        #expect(summary == ErrorLogSummary(original))
+    }
 }
