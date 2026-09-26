@@ -18,22 +18,22 @@ extension DecodingError {
     public var debugSummary: String {
         switch self {
         case .keyNotFound(let key, let context):
-            return "keyNotFound '\(key.stringValue)' at \(Self.pathDescription(context.codingPath))"
+            "keyNotFound '\(key.stringValue)' at \(Self.pathDescription(context.codingPath))"
         case .valueNotFound(let type, let context):
-            return "valueNotFound \(type) at \(Self.pathDescription(context.codingPath))"
+            "valueNotFound \(type) at \(Self.pathDescription(context.codingPath))"
         case .typeMismatch(let type, let context):
-            return "typeMismatch \(type) at \(Self.pathDescription(context.codingPath))"
+            "typeMismatch \(type) at \(Self.pathDescription(context.codingPath))"
         case .dataCorrupted(let context):
-            return "dataCorrupted at \(Self.pathDescription(context.codingPath))"
+            "dataCorrupted at \(Self.pathDescription(context.codingPath))"
         @unknown default:
-            return "DecodingError"
+            "DecodingError"
         }
     }
 
     /// Renders a coding path as `items[2].user.id`: array indices become subscripts and an
     /// empty path becomes `<root>`.
     static func pathDescription(_ codingPath: [any CodingKey]) -> String {
-        guard !codingPath.isEmpty else { return "<root>" }
+        guard !codingPath.isEmpty else { return rootPath }
         var description = ""
         for key in codingPath {
             if let index = Self.arrayIndex(of: key) {
@@ -56,4 +56,7 @@ extension DecodingError {
         else { return nil }
         return index
     }
+
+    /// Stands in for an empty coding path, so a summary always names a location.
+    private static let rootPath = "<root>"
 }
