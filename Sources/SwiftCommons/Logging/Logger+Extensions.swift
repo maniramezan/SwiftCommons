@@ -190,6 +190,12 @@ struct ErrorLogSummary: Equatable {
     let localizedDescription: String
 
     init(_ error: Error) {
+        if let snapshot = error as? AnySendableError {
+            // Log the wrapped error's identity, not the wrapper's.
+            identity = "\(snapshot.typeName) (\(snapshot.domain) \(snapshot.code))"
+            localizedDescription = snapshot.localizedDescription
+            return
+        }
         let nsError = error as NSError
         identity =
             "\(String(reflecting: type(of: error))) (\(nsError.domain) \(nsError.code))"

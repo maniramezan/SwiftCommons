@@ -39,6 +39,7 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   - `CSV`: lightweight CSV parsing/serialization helpers (behind the `CSV` package trait)
   - `Persistence`: `ModelContainer.make(for:inMemory:)` SwiftData bootstrap helper
   - `Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncableModel`, `SyncMetadata`, DTOs)
+  - `Errors`: `AnySendableError`, a value snapshot of any `Error`
 - `Sources/SwiftCommonsTestSupport`: a separate library product with test-only helpers for consumers
   of `SwiftCommons` (fake clock, `LoadingState` assertions, in-memory SwiftData context helper, and
   sync fixtures: `makeInMemorySyncContainer(for:)`, `SyncResponseDTO.fixture(...)`,
@@ -74,6 +75,9 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   `measure` and `begin` allocate a fresh signpost ID so overlapping intervals are not paired with
   each other by the default `.exclusive` ID.
 - `DurationFormatter.format(seconds:)` renders compact `m:ss` / `h:mm:ss` durations.
+- `AnySendableError(error)` snapshots any error as a `Hashable` value (`typeName`, `domain`, `code`,
+  `description`, and `localizedDescription` via `LocalizedError`); it doesn't nest, and
+  `ErrorLogSummary` logs the wrapped error's identity rather than the wrapper's.
 - `LoadingState<Value>` models idle/loading/loaded/failed screen state; `LoadingState.load { ... }`
   runs a throwing async operation and maps the outcome; `LoadingError(from:)` redacts internal
   error details behind a generic, user-safe message.

@@ -16,6 +16,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Bounds-checked element | `array[safe: i]` → `Element?`; `array[i, default: x]` |
 | Bounds-clamped slice | `array[safe: 2..<10]` |
 | Optional fallback with lazy default | `optional.ifNil(expensiveDefault())` |
+| Store / compare an arbitrary error as a value | `AnySendableError(error)` (keeps type, domain, code, descriptions; `Hashable`) |
 | Trim / blank checks | `text.trimmed`, `text.isBlank`, `text.nilIfBlank` |
 | Parse config text | `Bool(parsing:)` (true/false, 1/0, yes/no, on/off), `Int(parsing:)`, `Double(parsing:)` |
 | Encode a boolean flag | `String(flag: true)` → `"1"` |
