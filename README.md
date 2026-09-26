@@ -62,6 +62,8 @@ CSV helpers are opt-in via the `CSV` package trait:
 - **Configuration** — `ConfigValue`, a lenient `bool`/`string`/`int`/`double` coercion type, with
   loaders for `ProcessInfo.environment` and decoded property lists, plus a `ConfigValueType` tag and
   `ConfigValue(string:valueType:)` for decoding a textual value whose type is known separately.
+- **Async fan-out** — `AsyncBroadcaster`, one source broadcast to many `AsyncStream`s, with
+  optional replay of the latest value.
 - **Concurrency** — `AsyncLock` (FIFO mutex), `AsyncSemaphore` (counting semaphore), `Debouncer`,
   and `withRetry(...)` — all built on the injectable `SwiftCommonsClock` abstraction so consumers
   can substitute a fake clock in tests.

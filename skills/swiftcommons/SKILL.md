@@ -33,6 +33,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Screen loading state | `LoadingState<Value>` with `state = await .load { try await fetch() }` |
 | Serialize async work across awaits | `try await lock.withLock { … }` (`AsyncLock`) |
 | Cap concurrency | `AsyncSemaphore(value: n).withPermit { … }` |
+| Fan one source out to many `AsyncStream`s | `AsyncBroadcaster<T>()` → `makeStream()` / `yield(_:)` / `finish()`; `replaysLatest: true` for current-value streams |
 | Debounce | `await Debouncer(delay: .milliseconds(300)).run { … }` |
 | Retry | `try await withRetry(attempts: 3, delay: .seconds(1)) { … }` |
 | SwiftData container | `try ModelContainer.make(for: A.self, B.self, inMemory: isPreview)` |
