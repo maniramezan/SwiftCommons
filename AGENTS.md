@@ -93,6 +93,9 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   (default: `ContinuousSwiftCommonsClock`, backed by `Task.sleep(for:)`). Both APIs default to the
   real clock, so existing call sites are unaffected; tests can inject
   `ManualSwiftCommonsClock` (in `SwiftCommonsTestSupport`) to avoid real-time waits.
+- `SingleFlight<Key, Value>` (actor) coalesces concurrent `value(for:operation:)` calls per key into
+  one task; `cancel(_:)`/`cancelAll()` detach the flight, and a flight-ID check turns a cancelled
+  flight's late result into `CancellationError`. Nothing is cached after a flight finishes.
 - `CSV` provides lightweight CSV parsing/serialization; gated behind the `CSV` package trait to
   keep it opt-in.
 - `ModelContainer.make(for:inMemory:)` is a thin bootstrap over `ModelContainer.init(for:configurations:)`
