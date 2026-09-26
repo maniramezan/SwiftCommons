@@ -57,6 +57,8 @@ CSV helpers are opt-in via the `CSV` package trait:
 - **Localization** — `Language`/`Country` enums and `Locale` identifier helpers.
 - **Logging** — OSLog `Logger` conveniences for categories, privacy, and context.
 - **Formatting** — `DurationFormatter` for compact `m:ss` / `h:mm:ss` durations.
+- **Errors** — `AnySendableError`, a `Hashable` snapshot of any error (type, domain, code,
+  descriptions) for storing or comparing errors as values.
 - **State** — a generic `LoadingState` machine (`idle`/`loading`/`loaded`/`failed`) with a
   user-safe `LoadingError`, including a `LoadingState.load { ... }` helper for wrapping async work.
 - **Configuration** — `ConfigValue`, a lenient `bool`/`string`/`int`/`double` coercion type, with
