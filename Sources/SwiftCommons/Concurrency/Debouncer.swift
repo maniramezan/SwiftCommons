@@ -23,7 +23,7 @@ import Foundation
 /// never runs.
 public actor Debouncer {
     private let delay: Duration
-    private let clock: any SwiftCommonsClock
+    private let clock: any DelayClock
     private var task: Task<Void, Never>?
 
     /// Creates a debouncer with the given quiet-period delay.
@@ -31,10 +31,10 @@ public actor Debouncer {
     ///   - delay: How long to wait after the most recent call before running
     ///     the action.
     ///   - clock: The clock used to wait out the quiet period. Defaults to
-    ///     ``ContinuousSwiftCommonsClock``. Tests can inject a fake clock (see
-    ///     `ManualSwiftCommonsClock` in `SwiftCommonsTestSupport`) to avoid
+    ///     ``LiveClock``. Tests can inject a fake clock (see
+    ///     `ManualClock` in `SwiftCommonsTestSupport`) to avoid
     ///     real delays.
-    public init(delay: Duration, clock: any SwiftCommonsClock = ContinuousSwiftCommonsClock()) {
+    public init(delay: Duration, clock: any DelayClock = LiveClock()) {
         self.delay = delay
         self.clock = clock
     }

@@ -1,6 +1,6 @@
 ---
 name: swiftcommons-testing
-description: Use when writing Swift Testing tests for code built on SwiftCommons — time-dependent code using withRetry or Debouncer, LoadingState results, SwiftData models, or SyncEngine resources — via the SwiftCommonsTestSupport product (ManualSwiftCommonsClock, expectLoaded/expectFailed, makeInMemoryModelContext, makeInMemorySyncContainer, Box, recordingCall, DTO fixtures).
+description: Use when writing Swift Testing tests for code built on SwiftCommons — time-dependent code using withRetry or Debouncer, LoadingState results, SwiftData models, or SyncEngine resources — via the SwiftCommonsTestSupport product (ManualClock, expectLoaded/expectFailed, makeInMemoryModelContext, makeInMemorySyncContainer, Box, recordingCall, DTO fixtures).
 ---
 
 # Testing with SwiftCommonsTestSupport
@@ -15,13 +15,13 @@ into app targets.
 ])
 ```
 
-## Time: `ManualSwiftCommonsClock`
+## Time: `ManualClock`
 
 `withRetry` and `Debouncer` accept a `clock:`. In tests, inject the fake clock so no test sleeps
 in real time.
 
 ```swift
-let clock = ManualSwiftCommonsClock()
+let clock = ManualClock()
 let task = Task { try await withRetry(attempts: 3, delay: .seconds(5), clock: clock) { try await flaky() } }
 
 while await clock.waiterCount == 0 { await Task.yield() }   // wait until the sleep is registered
