@@ -35,6 +35,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Cap concurrency | `AsyncSemaphore(value: n).withPermit { … }` |
 | Debounce | `await Debouncer(delay: .milliseconds(300)).run { … }` |
 | Retry | `try await withRetry(attempts: 3, delay: .seconds(1)) { … }` |
+| Retry with exponential backoff / only some errors | `withRetry(attempts:backoff: .exponential(baseDelay:maxDelay:jitter:), shouldRetry:operation:)` |
 | SwiftData container | `try ModelContainer.make(for: A.self, B.self, inMemory: isPreview)` |
 | Measure hot paths | `SignpostRecorder(subsystem:category:).measure("name") { … }` |
 | Offline sync | `SyncEngine` + `SyncResourceAdapter` — see the `swiftcommons-sync` skill |

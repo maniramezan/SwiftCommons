@@ -35,7 +35,7 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   - `Formatters`: `DurationFormatter` for human-readable durations
   - `State`: `LoadingState<Value>` async data-loading state machine
   - `Configuration`: `ConfigValue` for lenient cross-type config coercion, environment loading, and property-list loading
-  - `Concurrency`: `AsyncLock`, `AsyncSemaphore`, `Debouncer`, `withRetry(...)`, and the injectable `SwiftCommonsClock` abstraction
+  - `Concurrency`: `AsyncLock`, `AsyncSemaphore`, `Debouncer`, `withRetry(...)`, and the injectable `DelayClock` abstraction
   - `CSV`: lightweight CSV parsing/serialization helpers (behind the `CSV` package trait)
   - `Persistence`: `ModelContainer.make(for:inMemory:)` SwiftData bootstrap helper
   - `Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncableModel`, `SyncMetadata`, DTOs)
@@ -89,10 +89,13 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   capping concurrent access (e.g. limiting parallel network requests).
 - `Debouncer` (actor) coalesces rapid repeated calls into one action after a quiet period.
 - `withRetry(attempts:delay:clock:operation:)` retries a throwing async operation with a fixed delay.
-- `SwiftCommonsClock` is the injectable clock protocol behind `withRetry` and `Debouncer`'s delays
-  (default: `ContinuousSwiftCommonsClock`, backed by `Task.sleep(for:)`). Both APIs default to the
+- `withRetry(attempts:backoff:clock:shouldRetry:operation:)` takes a `RetryBackoff` (`.constant`,
+  or `.exponential(baseDelay:multiplier:maxDelay:jitter:jitterSource:)`, capped before jitter)
+  and a `shouldRetry` predicate; the fixed-delay overload is built on `.constant`.
+- `DelayClock` is the injectable clock protocol behind `withRetry` and `Debouncer`'s delays
+  (default: `LiveClock`, backed by `Task.sleep(for:)`). Both APIs default to the
   real clock, so existing call sites are unaffected; tests can inject
-  `ManualSwiftCommonsClock` (in `SwiftCommonsTestSupport`) to avoid real-time waits.
+  `ManualClock` (in `SwiftCommonsTestSupport`) to avoid real-time waits.
 - `CSV` provides lightweight CSV parsing/serialization; gated behind the `CSV` package trait to
   keep it opt-in.
 - `ModelContainer.make(for:inMemory:)` is a thin bootstrap over `ModelContainer.init(for:configurations:)`
@@ -101,8 +104,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   only know the model types dynamically.
 - `SyncEngine` (`@MainActor`) drives offline sync for SwiftData `@Model` rows conforming to `SyncableModel`; each resource plugs in via a `SyncResourceAdapter` (struct of closures) and the engine owns the contract (ack guard, pending guard, full-snapshot reconciliation, pagination drain, full-resync recovery).
 - `SyncableModel` requires `isTombstoned`, NOT `isDeleted`: on a SwiftData `@Model` a stored `isDeleted` is shadowed by `PersistentModel.isDeleted` (context hard-delete state), so writes don't read back on the live object. Never name a soft-delete flag `isDeleted` on a `@Model`.
-- `SwiftCommonsTestSupport` (separate product) provides: `ManualSwiftCommonsClock` (fake, manually
-  advanced `SwiftCommonsClock` — poll `waiterCount` before calling `advance(by:)` to avoid racing
+- `SwiftCommonsTestSupport` (separate product) provides: `ManualClock` (fake, manually
+  advanced `DelayClock` — poll `waiterCount` before calling `advance(by:)` to avoid racing
   against code under test that hasn't registered its sleep yet); `expectLoaded(_:)`/`expectFailed(_:)`
   for asserting on `LoadingState`; `makeInMemoryModelContext(for:)` for a ready-to-use SwiftData
   `ModelContext`; and `Box<Value>` (`@MainActor` mutable capture reference) plus `recordingCall(returning:into:)`

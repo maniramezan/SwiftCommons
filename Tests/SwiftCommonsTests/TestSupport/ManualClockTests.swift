@@ -4,12 +4,12 @@ import Testing
 @testable import SwiftCommons
 @testable import SwiftCommonsTestSupport
 
-@Suite("ManualSwiftCommonsClock")
+@Suite("ManualClock")
 @MainActor
-struct ManualSwiftCommonsClockTests {
+struct ManualClockTests {
     @Test
     func sleepSuspendsUntilAdvancedPastDuration() async {
-        let clock = ManualSwiftCommonsClock()
+        let clock = ManualClock()
         let finished = Box(false)
 
         let task = Task {
@@ -33,14 +33,14 @@ struct ManualSwiftCommonsClockTests {
 
     @Test
     func sleepForZeroDurationReturnsImmediately() async throws {
-        let clock = ManualSwiftCommonsClock()
+        let clock = ManualClock()
         try await clock.sleep(for: .zero)
         // No advance() call needed — reaching this line proves it didn't hang.
     }
 
     @Test
     func withRetryUsesManualClockWithoutRealDelay() async throws {
-        let clock = ManualSwiftCommonsClock()
+        let clock = ManualClock()
         let attempts = Box(0)
 
         let task = Task {
@@ -73,7 +73,7 @@ struct ManualSwiftCommonsClockTests {
 
     @Test
     func debouncerUsesManualClockWithoutRealDelay() async {
-        let clock = ManualSwiftCommonsClock()
+        let clock = ManualClock()
         let debouncer = Debouncer(delay: .seconds(5), clock: clock)
         let ran = Box(false)
 
