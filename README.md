@@ -56,6 +56,8 @@ CSV helpers are opt-in via the `CSV` package trait:
   human-readable relative times ("1 hour ago").
 - **Localization** — `Language`/`Country` enums and `Locale` identifier helpers.
 - **Logging** — OSLog `Logger` conveniences for categories, privacy, and context.
+- **Library logging** — `LibraryLogger`, a level-gated OSLog front end whose verbosity a library's
+  users control (`setLevel(_:)`), with per-category handles and private URL/error logging.
 - **Formatting** — `DurationFormatter` for compact `m:ss` / `h:mm:ss` durations.
 - **State** — a generic `LoadingState` machine (`idle`/`loading`/`loaded`/`failed`) with a
   user-safe `LoadingError`, including a `LoadingState.load { ... }` helper for wrapping async work.

@@ -67,6 +67,11 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Language` and `Country` enums are curated ISO code subsets (not exhaustive).
 - `Locale.identifier(language:country:)` plus `Locale.Identifiers` convenience constants.
 - Logging helpers built on OSLog with public/private convenience methods and context helpers.
+- `LibraryLogger(subsystem:defaultLevel:)` is a level-gated logger for *library* packages: the level
+  (`LibraryLogger.Level`, `off`...`debug`, default `.warning`) lives in an `OSAllocatedUnfairLock`
+  per instance (no process-wide setting), `category(_:)` returns a `Category` whose
+  `debug`/`info`/`warning`/`error` log messages public and `url:`/`error:` details private.
+  Messages are `@autoclosure`s, so skipped levels never build their strings.
 - `SignpostRecorder` wraps `OSSignposter` (`measure(_:_:)` sync and async, `begin`/`end` for
   interval pairs driven by separate callbacks, `event(_:)`, `isEnabled`). Every entry point
   short-circuits when no profiler is attached, so call sites need no `#if` guards. Interval names
