@@ -54,6 +54,9 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Bundle.appVersion`, `.buildNumber`, `.versionAndBuildNumber` for app version display.
 - `UUID` extensions for byte access and deterministic generation.
 - `Duration.timeInterval` bridges `Duration` to `TimeInterval`.
+- `DecodingError.debugSummary` renders the failure kind, key/type, and a readable coding path
+  (`typeMismatch Int at items[2].user.id`, `<root>` for an empty path) without decoded values;
+  only `Index N`-style keys become subscripts, so `Int`-backed `CodingKeys` keep their names.
 - `URL` adopts `ExpressibleByStringLiteral` using `@retroactive` (Swift 6).
 - `DateFormatter.formatter(...)` caches per-thread instances via `Thread.current.threadDictionary`.
 - `NumberFormatter.formatYear(_:locale:)`, `.formatDay(_:locale:)`, `.formatOrdinal(_:locale:)`,
