@@ -2,12 +2,12 @@ import Foundation
 import SwiftCommons
 
 /// A fake, manually-advanced clock for testing code built on
-/// ``SwiftCommons/SwiftCommonsClock``, such as `withRetry` and `Debouncer`.
+/// ``SwiftCommons/DelayClock``, such as `withRetry` and `Debouncer`.
 ///
 /// Calls to `sleep(for:)` suspend until the fake clock is advanced past their
 /// requested duration, instead of waiting on real time:
 ///
-///     let clock = ManualSwiftCommonsClock()
+///     let clock = ManualClock()
 ///     let debouncer = Debouncer(delay: .seconds(1), clock: clock)
 ///
 ///     await debouncer.run { /* ... */ }
@@ -15,7 +15,7 @@ import SwiftCommons
 ///
 /// This makes tests for debounced or retried behavior deterministic and
 /// instantaneous instead of depending on real, wall-clock delays.
-public actor ManualSwiftCommonsClock: SwiftCommonsClock {
+public actor ManualClock: DelayClock {
     private struct Waiter {
         let wakeAt: Duration
         let continuation: CheckedContinuation<Void, Never>

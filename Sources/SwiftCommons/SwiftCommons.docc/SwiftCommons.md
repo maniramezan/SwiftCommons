@@ -55,7 +55,7 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   decoding a textual value whose type is known separately.
 - **Concurrency** — ``AsyncLock`` (FIFO mutex), ``AsyncSemaphore`` (counting
   semaphore), ``Debouncer``, and ``withRetry(attempts:delay:clock:operation:)``,
-  all built on the injectable ``SwiftCommonsClock`` abstraction.
+  all built on the injectable ``DelayClock`` abstraction.
 - **CSV** — lightweight CSV parsing/serialization, gated behind the `CSV`
   package trait.
 - **Persistence** — `ModelContainer.make(for:inMemory:)`, a thin SwiftData
@@ -101,8 +101,8 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 - ``AsyncSemaphore``
 - ``Debouncer``
 - ``withRetry(attempts:delay:clock:operation:)``
-- ``SwiftCommonsClock``
-- ``ContinuousSwiftCommonsClock``
+- ``DelayClock``
+- ``LiveClock``
 
 ### Dates & Calendars
 

@@ -15,7 +15,7 @@ struct DebouncerTests {
 
     @Test
     func onlyRunsTheLastActionWithinTheDelayWindow() async {
-        let clock = ManualSwiftCommonsClock()
+        let clock = ManualClock()
         let debouncer = Debouncer(delay: .milliseconds(50), clock: clock)
         let recorder = Recorder()
 
@@ -44,7 +44,7 @@ struct DebouncerTests {
 
     @Test
     func runsAgainAfterThePreviousActionCompletes() async {
-        let clock = ManualSwiftCommonsClock()
+        let clock = ManualClock()
         let debouncer = Debouncer(delay: .milliseconds(20), clock: clock)
         let recorder = Recorder()
 
@@ -67,7 +67,7 @@ struct DebouncerTests {
 
     @Test
     func cancelPreventsThePendingActionFromRunning() async {
-        let clock = ManualSwiftCommonsClock()
+        let clock = ManualClock()
         let debouncer = Debouncer(delay: .milliseconds(30), clock: clock)
         let recorder = Recorder()
 
@@ -85,7 +85,7 @@ struct DebouncerTests {
 
     @Test
     func deallocatingTheDebouncerCancelsThePendingAction() async {
-        let clock = ManualSwiftCommonsClock()
+        let clock = ManualClock()
         let recorder = Recorder()
         var debouncer: Debouncer? = Debouncer(delay: .milliseconds(30), clock: clock)
 
