@@ -1,3 +1,4 @@
+#if SwiftData
 import Foundation
 import SwiftData
 
@@ -42,3 +43,4 @@ public final class SyncMetadata {
     /// App-defined passthrough values copied from the last server response.
     public var serverInfo: [String: String]
 }
+#endif

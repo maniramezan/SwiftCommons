@@ -4,7 +4,7 @@ Primary agent guidance for this repository (Codex, Claude, and any other coding 
 
 ## Project Overview
 
-SwiftCommons is a Swift Package Manager library providing Foundation extensions and utilities. It targets macOS 14+, iOS 17+, and Mac Catalyst 17+ (SwiftData requires these minimums). The package uses Swift 6 language mode (`swift-tools-version: 6.2`) and has no external dependencies.
+SwiftCommons is a Swift Package Manager library providing Foundation extensions and utilities. It targets macOS 14+, iOS 17+, and Mac Catalyst 17+ (declared for the whole package, with or without the `SwiftData` trait). The package uses Swift 6 language mode (`swift-tools-version: 6.2`) and has no external dependencies.
 
 ## Build and Test
 
@@ -24,6 +24,20 @@ Important: If using Swift development snapshots (6.3-dev), `swift test` may fail
 See `CONTRIBUTING.md` for formatting and documentation conventions, and
 `.github/workflows` for CI and Docs workflows.
 
+## Package Traits
+
+- `SwiftData` (**default**): gates every file that imports SwiftData — `Persistence/ModelContainer+Extensions.swift`,
+  `Sync/SyncEngine.swift`, `Sync/SyncMetadata.swift`, `Sync/SyncResourceAdapter.swift`, and in
+  `SwiftCommonsTestSupport` `ModelContextFixtures.swift` plus `makeInMemorySyncContainer(for:)`.
+  Wrap new SwiftData-dependent code (and its tests) in `#if SwiftData`, and gate as little as
+  possible: types that compile without SwiftData stay available with `traits: []`.
+- Don't indent code inside `#if` blocks (`indentConditionalCompilationBlocks` is `false` in
+  `.swift-format`), so wrapping a whole file in a trait check doesn't re-indent it.
+- `CSV` (opt-in): `CSV/CSV.swift`, wrapped in `#if CSV`.
+- Verify all three configurations: `swift test` (defaults), `swift test --disable-default-traits`,
+  and `swift test --enable-all-traits` (what CI's main run and the DocC build use). Passing
+  `--traits CSV` alone turns the default `SwiftData` trait off; use `--traits defaults,CSV`.
+
 ## Package Structure
 
 - `Sources/SwiftCommons`: the main library (extensions, dates, locales, logging, formatters, state,
@@ -37,8 +51,9 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   - `Configuration`: `ConfigValue` for lenient cross-type config coercion, environment loading, and property-list loading
   - `Concurrency`: `AsyncLock`, `AsyncSemaphore`, `AsyncBroadcaster`, `SingleFlight`, `Debouncer`, `withRetry(...)`, and the injectable `DelayClock` abstraction
   - `CSV`: lightweight CSV parsing/serialization helpers (behind the `CSV` package trait)
-  - `Persistence`: `ModelContainer.make(for:inMemory:)` SwiftData bootstrap helper
-  - `Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncableModel`, `SyncMetadata`, DTOs)
+  - `Persistence`: `ModelContainer.make(for:inMemory:)` SwiftData bootstrap helper (behind the `SwiftData` trait)
+  - `Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncMetadata` are behind the
+    `SwiftData` trait; `SyncableModel`, `SyncState`, `SyncEvent`, and the DTOs are always available)
   - `Errors`: `AnySendableError`, a value snapshot of any `Error`
 - `Sources/SwiftCommonsTestSupport`: a separate library product with test-only helpers for consumers
   of `SwiftCommons` (fake clock, `LoadingState` assertions, in-memory SwiftData context helper, and

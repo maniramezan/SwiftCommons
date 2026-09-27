@@ -1,3 +1,4 @@
+#if SwiftData
 import Foundation
 import SwiftCommons
 import SwiftData
@@ -26,3 +27,4 @@ public func makeInMemoryModelContext(
     let container = try ModelContainer.make(for: types, inMemory: true)
     return ModelContext(container)
 }
+#endif

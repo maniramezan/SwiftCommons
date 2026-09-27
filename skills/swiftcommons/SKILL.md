@@ -77,6 +77,10 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
   constants; an invalid literal is a runtime `preconditionFailure`.
 - **CSV is opt-in.** Enable the `CSV` package trait to get `CSV.parseRows` /
   `CSV.serializeRows`.
+- **SwiftData APIs are a default trait.** `ModelContainer.make`, `SyncEngine`,
+  `SyncResourceAdapter`, and `SyncMetadata` need the `SwiftData` trait, which is on unless the
+  dependency lists `traits:`. Listing traits replaces the defaults, so write
+  `traits: [.defaults, "CSV"]`, not `traits: ["CSV"]`, to keep them. `traits: []` drops them.
 - **`Locale.identifier(language:country:)` uses a curated subset.** The `Language` and `Country`
   enums don't cover every ISO code.
 
