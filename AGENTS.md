@@ -31,6 +31,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   `SwiftCommonsTestSupport` `ModelContextFixtures.swift` plus `makeInMemorySyncContainer(for:)`.
   Wrap new SwiftData-dependent code (and its tests) in `#if SwiftData`, and gate as little as
   possible: types that compile without SwiftData stay available with `traits: []`.
+- Don't indent code inside `#if` blocks (`indentConditionalCompilationBlocks` is `false` in
+  `.swift-format`), so wrapping a whole file in a trait check doesn't re-indent it.
 - `CSV` (opt-in): `CSV/CSV.swift`, wrapped in `#if CSV`.
 - Verify all three configurations: `swift test` (defaults), `swift test --disable-default-traits`,
   and `swift test --enable-all-traits` (what CI's main run and the DocC build use). Passing

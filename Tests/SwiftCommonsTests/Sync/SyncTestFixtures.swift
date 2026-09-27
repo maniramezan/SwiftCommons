@@ -4,37 +4,37 @@ import Foundation
 @testable import SwiftCommonsTestSupport
 
 #if SwiftData
-    import SwiftData
+import SwiftData
 
-    // A minimal syncable resource used to exercise the generic engine.
+// A minimal syncable resource used to exercise the generic engine.
 
-    @Model
-    final class SyncItem: SyncableModel {
-        init(
-            key: String,
-            title: String,
-            serverId: Int? = nil,
-            syncState: SyncState = .synced,
-            isTombstoned: Bool = false,
-            localUpdatedAt: Date = Date(timeIntervalSince1970: 0)
-        ) {
-            self.key = key
-            self.title = title
-            self.serverId = serverId
-            self.syncState = syncState
-            self.isTombstoned = isTombstoned
-            self.localUpdatedAt = localUpdatedAt
-            updatedAt = Date(timeIntervalSince1970: 0)
-        }
-
-        var key: String
-        var title: String
-        var serverId: Int?
-        var updatedAt: Date
-        var isTombstoned: Bool
-        var syncState: SyncState
-        var localUpdatedAt: Date
+@Model
+final class SyncItem: SyncableModel {
+    init(
+        key: String,
+        title: String,
+        serverId: Int? = nil,
+        syncState: SyncState = .synced,
+        isTombstoned: Bool = false,
+        localUpdatedAt: Date = Date(timeIntervalSince1970: 0)
+    ) {
+        self.key = key
+        self.title = title
+        self.serverId = serverId
+        self.syncState = syncState
+        self.isTombstoned = isTombstoned
+        self.localUpdatedAt = localUpdatedAt
+        updatedAt = Date(timeIntervalSince1970: 0)
     }
+
+    var key: String
+    var title: String
+    var serverId: Int?
+    var updatedAt: Date
+    var isTombstoned: Bool
+    var syncState: SyncState
+    var localUpdatedAt: Date
+}
 #endif
 
 struct ItemUpsert: Encodable, Sendable {
@@ -58,72 +58,72 @@ typealias ItemResponse = SyncResponseDTO<ItemChange>
 
 enum SyncFixtures {
     #if SwiftData
-        static func makeContainer() throws -> ModelContainer {
-            try makeInMemorySyncContainer(for: SyncItem.self)
-        }
+    static func makeContainer() throws -> ModelContainer {
+        try makeInMemorySyncContainer(for: SyncItem.self)
+    }
 
-        /// Builds an adapter whose transport is the supplied `call` closure.
-        ///
-        /// ``SyncResourceAdapter/businessKey`` lowercases the item key, so the tests can
-        /// verify server-side key normalization the same way a real backend would.
-        @MainActor
-        static func adapter(
-            resourceName: String = "items",
-            call: @escaping (SyncRequestDTO<ItemUpsert, ItemDelete>) async throws -> ItemResponse
-        ) -> SyncResourceAdapter<SyncItem, ItemUpsert, ItemDelete, ItemChange> {
-            SyncResourceAdapter(
-                resourceName: resourceName,
-                fetchPending: { context in
-                    try context.fetch(FetchDescriptor<SyncItem>()).filter {
-                        $0.syncState != .synced
-                    }
-                },
-                businessKey: { $0.key.lowercased() },
-                makeUpserts: { models in
-                    models.filter { !$0.isTombstoned }.map {
-                        ItemUpsert(key: $0.key, title: $0.title)
-                    }
-                },
-                makeDeletes: { models in
-                    models.filter { $0.isTombstoned }.map {
-                        ItemDelete(id: $0.serverId, key: $0.key)
-                    }
-                },
-                call: call,
-                findExisting: { change, context in
-                    try context.fetch(FetchDescriptor<SyncItem>())
-                        .first { $0.key.lowercased() == change.key.lowercased() }
-                },
-                changeKey: { $0.key.lowercased() },
-                isChangeDeleted: { $0.isDeleted },
-                upsertFromChange: { change, existing, context in
-                    if let existing {
-                        existing.title = change.title
-                        existing.serverId = change.serverId
-                        existing.isTombstoned = change.isDeleted
-                        existing.syncState = .synced
-                    } else {
-                        let item = SyncItem(
-                            key: change.key,
-                            title: change.title,
-                            serverId: change.serverId,
-                            syncState: .synced,
-                            isTombstoned: change.isDeleted
-                        )
-                        context.insert(item)
-                    }
-                },
-                fetchActive: { context in
-                    try context.fetch(FetchDescriptor<SyncItem>()).filter { !$0.isTombstoned }
-                },
-                purgeSynced: { context in
-                    for item in try context.fetch(FetchDescriptor<SyncItem>())
-                    where item.syncState == .synced {
-                        context.delete(item)
-                    }
+    /// Builds an adapter whose transport is the supplied `call` closure.
+    ///
+    /// ``SyncResourceAdapter/businessKey`` lowercases the item key, so the tests can
+    /// verify server-side key normalization the same way a real backend would.
+    @MainActor
+    static func adapter(
+        resourceName: String = "items",
+        call: @escaping (SyncRequestDTO<ItemUpsert, ItemDelete>) async throws -> ItemResponse
+    ) -> SyncResourceAdapter<SyncItem, ItemUpsert, ItemDelete, ItemChange> {
+        SyncResourceAdapter(
+            resourceName: resourceName,
+            fetchPending: { context in
+                try context.fetch(FetchDescriptor<SyncItem>()).filter {
+                    $0.syncState != .synced
                 }
-            )
-        }
+            },
+            businessKey: { $0.key.lowercased() },
+            makeUpserts: { models in
+                models.filter { !$0.isTombstoned }.map {
+                    ItemUpsert(key: $0.key, title: $0.title)
+                }
+            },
+            makeDeletes: { models in
+                models.filter { $0.isTombstoned }.map {
+                    ItemDelete(id: $0.serverId, key: $0.key)
+                }
+            },
+            call: call,
+            findExisting: { change, context in
+                try context.fetch(FetchDescriptor<SyncItem>())
+                    .first { $0.key.lowercased() == change.key.lowercased() }
+            },
+            changeKey: { $0.key.lowercased() },
+            isChangeDeleted: { $0.isDeleted },
+            upsertFromChange: { change, existing, context in
+                if let existing {
+                    existing.title = change.title
+                    existing.serverId = change.serverId
+                    existing.isTombstoned = change.isDeleted
+                    existing.syncState = .synced
+                } else {
+                    let item = SyncItem(
+                        key: change.key,
+                        title: change.title,
+                        serverId: change.serverId,
+                        syncState: .synced,
+                        isTombstoned: change.isDeleted
+                    )
+                    context.insert(item)
+                }
+            },
+            fetchActive: { context in
+                try context.fetch(FetchDescriptor<SyncItem>()).filter { !$0.isTombstoned }
+            },
+            purgeSynced: { context in
+                for item in try context.fetch(FetchDescriptor<SyncItem>())
+                where item.syncState == .synced {
+                    context.delete(item)
+                }
+            }
+        )
+    }
     #endif
 
     static func response(

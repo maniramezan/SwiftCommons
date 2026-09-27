@@ -5,33 +5,33 @@ import Testing
 @testable import SwiftCommonsTestSupport
 
 #if SwiftData
-    import SwiftData
+import SwiftData
 
-    @Model
-    private final class SyncFixtureItem {
-        init(name: String) {
-            self.name = name
-        }
-
-        var name: String
+@Model
+private final class SyncFixtureItem {
+    init(name: String) {
+        self.name = name
     }
+
+    var name: String
+}
 #endif
 
 @MainActor
 @Suite("Sync fixtures")
 struct SyncFixturesTests {
     #if SwiftData
-        @Test
-        func syncContainerIncludesSyncMetadata() throws {
-            let container = try makeInMemorySyncContainer(for: SyncFixtureItem.self)
-            let context = container.mainContext
-            context.insert(SyncMetadata(resourceName: "items"))
-            context.insert(SyncFixtureItem(name: "widget"))
-            try context.save()
+    @Test
+    func syncContainerIncludesSyncMetadata() throws {
+        let container = try makeInMemorySyncContainer(for: SyncFixtureItem.self)
+        let context = container.mainContext
+        context.insert(SyncMetadata(resourceName: "items"))
+        context.insert(SyncFixtureItem(name: "widget"))
+        try context.save()
 
-            #expect(try context.fetch(FetchDescriptor<SyncMetadata>()).count == 1)
-            #expect(try context.fetch(FetchDescriptor<SyncFixtureItem>()).count == 1)
-        }
+        #expect(try context.fetch(FetchDescriptor<SyncMetadata>()).count == 1)
+        #expect(try context.fetch(FetchDescriptor<SyncFixtureItem>()).count == 1)
+    }
     #endif
 
     @Test
