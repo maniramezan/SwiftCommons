@@ -8,7 +8,8 @@ docc_output_dir="/tmp/docc"
 
 mkdir -p "$docc_output_dir"
 
-swift package --allow-writing-to-directory "$docc_output_dir" \
+# Build with every trait so the docs cover the whole API (SwiftData is default; CSV is opt-in).
+swift package --enable-all-traits --allow-writing-to-directory "$docc_output_dir" \
     generate-documentation \
     --target "$target_name" \
     --output-path "$docc_output_dir" \

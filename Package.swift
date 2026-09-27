@@ -15,7 +15,12 @@ let package = Package(
     ],
     traits: [
         .trait(
-            name: "CSV", description: "Enables lightweight CSV parsing and serialization helpers")
+            name: "SwiftData",
+            description:
+                "Enables the SwiftData-backed APIs: ModelContainer helpers and the SyncEngine"),
+        .trait(
+            name: "CSV", description: "Enables lightweight CSV parsing and serialization helpers"),
+        .default(enabledTraits: ["SwiftData"]),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0")

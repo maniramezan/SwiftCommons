@@ -48,17 +48,19 @@ jobs:
             Sources \
             Tests
 
+      # Every trait on (the default SwiftData trait plus opt-in CSV), so the main run covers the
+      # whole API. Passing `--traits CSV` alone would turn the default SwiftData trait off.
       - name: Build
-        run: swift build
+        run: swift build --enable-all-traits
 
       - name: Test
-        run: swift test --enable-code-coverage
+        run: swift test --enable-all-traits --enable-code-coverage
 
       - name: Coverage report and gate
         env:
           MIN_COVERAGE: "90"
         run: |
-          bin_path="$(swift build --show-bin-path)"
+          bin_path="$(swift build --enable-all-traits --show-bin-path)"
           profdata="${bin_path}/codecov/default.profdata"
           xctest="$(find "${bin_path}" -maxdepth 1 -name '*.xctest' | head -n 1)"
           binary="${xctest}/Contents/MacOS/$(basename "${xctest}" .xctest)"
@@ -91,6 +93,7 @@ jobs:
       - name: Build Symbol Graphs
         run: |
           swift build \
+            --enable-all-traits \
             --target SwiftCommons \
             -Xswiftc -emit-symbol-graph \
             -Xswiftc -emit-symbol-graph-dir \
@@ -106,3 +109,10 @@ jobs:
             --warnings-as-errors \
             --analyze \
             --output-path /tmp/docc
+
+      # Consumers that opt out with `traits: []` get everything except the SwiftData-backed code.
+      - name: Build without default traits
+        run: swift build --disable-default-traits
+
+      - name: Test without default traits
+        run: swift test --disable-default-traits

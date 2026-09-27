@@ -1,24 +1,27 @@
 import Foundation
 import SwiftCommons
-import SwiftData
 
-/// Creates an in-memory `ModelContainer` for testing a ``SwiftCommons/SyncEngine``.
-///
-/// ``SwiftCommons/SyncMetadata`` is added to `types` automatically, since the engine
-/// stores each resource's cursor there and fails at runtime if the schema lacks it:
-///
-///     let container = try makeInMemorySyncContainer(for: Item.self)
-///     let engine = SyncEngine(modelContainer: container)
-///
-/// - Parameter types: The app's synced `PersistentModel` types.
-/// - Returns: A fresh, isolated in-memory container.
-/// - Throws: Any error thrown by `ModelContainer.init(for:configurations:)`.
-public func makeInMemorySyncContainer(
-    for types: any PersistentModel.Type...
-) throws -> ModelContainer {
-    let allTypes: [any PersistentModel.Type] = types + [SyncMetadata.self]
-    return try ModelContainer.make(for: allTypes, inMemory: true)
-}
+#if SwiftData
+    import SwiftData
+
+    /// Creates an in-memory `ModelContainer` for testing a ``SwiftCommons/SyncEngine``.
+    ///
+    /// ``SwiftCommons/SyncMetadata`` is added to `types` automatically, since the engine
+    /// stores each resource's cursor there and fails at runtime if the schema lacks it:
+    ///
+    ///     let container = try makeInMemorySyncContainer(for: Item.self)
+    ///     let engine = SyncEngine(modelContainer: container)
+    ///
+    /// - Parameter types: The app's synced `PersistentModel` types.
+    /// - Returns: A fresh, isolated in-memory container.
+    /// - Throws: Any error thrown by `ModelContainer.init(for:configurations:)`.
+    public func makeInMemorySyncContainer(
+        for types: any PersistentModel.Type...
+    ) throws -> ModelContainer {
+        let allTypes: [any PersistentModel.Type] = types + [SyncMetadata.self]
+        return try ModelContainer.make(for: allTypes, inMemory: true)
+    }
+#endif
 
 extension SyncResponseDTO {
 

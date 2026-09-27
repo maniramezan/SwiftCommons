@@ -1,33 +1,38 @@
 import Foundation
-import SwiftData
 import Testing
 
 @testable import SwiftCommons
 @testable import SwiftCommonsTestSupport
 
-@Model
-private final class SyncFixtureItem {
-    init(name: String) {
-        self.name = name
-    }
+#if SwiftData
+    import SwiftData
 
-    var name: String
-}
+    @Model
+    private final class SyncFixtureItem {
+        init(name: String) {
+            self.name = name
+        }
+
+        var name: String
+    }
+#endif
 
 @MainActor
 @Suite("Sync fixtures")
 struct SyncFixturesTests {
-    @Test
-    func syncContainerIncludesSyncMetadata() throws {
-        let container = try makeInMemorySyncContainer(for: SyncFixtureItem.self)
-        let context = container.mainContext
-        context.insert(SyncMetadata(resourceName: "items"))
-        context.insert(SyncFixtureItem(name: "widget"))
-        try context.save()
+    #if SwiftData
+        @Test
+        func syncContainerIncludesSyncMetadata() throws {
+            let container = try makeInMemorySyncContainer(for: SyncFixtureItem.self)
+            let context = container.mainContext
+            context.insert(SyncMetadata(resourceName: "items"))
+            context.insert(SyncFixtureItem(name: "widget"))
+            try context.save()
 
-        #expect(try context.fetch(FetchDescriptor<SyncMetadata>()).count == 1)
-        #expect(try context.fetch(FetchDescriptor<SyncFixtureItem>()).count == 1)
-    }
+            #expect(try context.fetch(FetchDescriptor<SyncMetadata>()).count == 1)
+            #expect(try context.fetch(FetchDescriptor<SyncFixtureItem>()).count == 1)
+        }
+    #endif
 
     @Test
     func responseFixtureDefaultsToAnEmptyDeltaPage() {
