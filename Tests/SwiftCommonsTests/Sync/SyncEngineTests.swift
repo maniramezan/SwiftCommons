@@ -1,3 +1,4 @@
+#if SwiftData
 import Foundation
 import SwiftData
 import Testing
@@ -95,7 +96,8 @@ struct SyncEngineTests {
                     SyncAppliedDTO(
                         key: "b", id: nil, status: "blocked", updatedAt: nil, reason: "quota"),
                     SyncAppliedDTO(
-                        key: "r", id: nil, status: "rejected", updatedAt: nil, reason: "invalid"),
+                        key: "r", id: nil, status: "rejected", updatedAt: nil, reason: "invalid"
+                    ),
                 ]
             )
         }
@@ -106,7 +108,8 @@ struct SyncEngineTests {
         #expect(blocked.syncState == .blocked)
         #expect(rejected.syncState == .blocked)
         #expect(
-            log.events.contains(.itemBlocked(resource: "items", status: "blocked", reason: "quota"))
+            log.events.contains(
+                .itemBlocked(resource: "items", status: "blocked", reason: "quota"))
         )
         #expect(
             log.events.contains(
@@ -127,7 +130,8 @@ struct SyncEngineTests {
                 applied: [
                     SyncAppliedDTO(
                         key: "u", id: nil, status: "updated", updatedAt: nil, reason: nil),
-                    SyncAppliedDTO(key: "n", id: nil, status: "noop", updatedAt: nil, reason: nil),
+                    SyncAppliedDTO(
+                        key: "n", id: nil, status: "noop", updatedAt: nil, reason: nil),
                     SyncAppliedDTO(
                         key: "x", id: nil, status: "mystery", updatedAt: nil, reason: nil),
                 ]
@@ -154,7 +158,8 @@ struct SyncEngineTests {
             itemBox.value.localUpdatedAt = Date(timeIntervalSince1970: 999)
             return SyncFixtures.response(
                 applied: [
-                    SyncAppliedDTO(key: "k", id: 7, status: "updated", updatedAt: 2, reason: nil)
+                    SyncAppliedDTO(
+                        key: "k", id: 7, status: "updated", updatedAt: 2, reason: nil)
                 ]
             )
         }
@@ -430,7 +435,8 @@ struct SyncEngineTests {
     @Test func startedAndCompletedEventsAreEmitted() async throws {
         let container = try SyncFixtures.makeContainer()
         let log = EventLog()
-        let adapter = SyncFixtures.adapter { _ in SyncFixtures.response(mode: "delta", cursor: "c")
+        let adapter = SyncFixtures.adapter { _ in
+            SyncFixtures.response(mode: "delta", cursor: "c")
         }
         let engine = SyncEngine(modelContainer: container, events: { await log.record($0) })
         try await engine.sync(adapter)
@@ -467,7 +473,8 @@ struct SyncEngineTests {
         let container = try SyncFixtures.makeContainer()
         let context = container.mainContext
         let adapter = SyncFixtures.adapter { _ in
-            SyncFixtures.response(cursor: "c", serverInfo: ["freeTierLimit": "10", "plan": "free"])
+            SyncFixtures.response(
+                cursor: "c", serverInfo: ["freeTierLimit": "10", "plan": "free"])
         }
         let engine = SyncEngine(modelContainer: container)
 
@@ -514,11 +521,13 @@ struct SyncEngineTests {
         let context = container.mainContext
         let resources = [
             AnySyncResource(
-                SyncFixtures.adapter(resourceName: "one") { _ in SyncFixtures.response(cursor: "1")
+                SyncFixtures.adapter(resourceName: "one") { _ in
+                    SyncFixtures.response(cursor: "1")
                 }
             ),
             AnySyncResource(
-                SyncFixtures.adapter(resourceName: "two") { _ in SyncFixtures.response(cursor: "2")
+                SyncFixtures.adapter(resourceName: "two") { _ in
+                    SyncFixtures.response(cursor: "2")
                 }
             ),
         ]
@@ -599,3 +608,4 @@ struct SyncEngineTests {
         #expect(active.isTombstoned)
     }
 }
+#endif

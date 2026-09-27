@@ -62,11 +62,14 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   package trait.
 - **Persistence** — `ModelContainer.make(for:inMemory:)`, a thin SwiftData
   bootstrap helper for apps, previews, and tests.
+  Behind the default `SwiftData` package trait.
 - **Formatting** — ``DurationFormatter`` for compact `m:ss` / `h:mm:ss`
   durations.
 - **Sync** — a generic ``SyncEngine`` that drives offline, cross-device sync
   for SwiftData-backed resources through one contract-owning loop; resources
-  plug in as ``SyncResourceAdapter`` values.
+  plug in as ``SyncResourceAdapter`` values. ``SyncEngine``, ``SyncResourceAdapter``, and
+  ``SyncMetadata`` are behind the default `SwiftData` trait; the DTOs,
+  ``SyncableModel``, ``SyncState``, and ``SyncEvent`` are always available.
 
 A separate `SwiftCommonsTestSupport` product ships test-only helpers (a fake
 clock, `LoadingState` assertions, an in-memory SwiftData context helper,

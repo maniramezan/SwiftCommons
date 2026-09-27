@@ -1,9 +1,11 @@
 import Foundation
-import SwiftData
 import Testing
 
 @testable import SwiftCommons
 @testable import SwiftCommonsTestSupport
+
+#if SwiftData
+import SwiftData
 
 @Model
 private final class SyncFixtureItem {
@@ -13,10 +15,12 @@ private final class SyncFixtureItem {
 
     var name: String
 }
+#endif
 
 @MainActor
 @Suite("Sync fixtures")
 struct SyncFixturesTests {
+    #if SwiftData
     @Test
     func syncContainerIncludesSyncMetadata() throws {
         let container = try makeInMemorySyncContainer(for: SyncFixtureItem.self)
@@ -28,6 +32,7 @@ struct SyncFixturesTests {
         #expect(try context.fetch(FetchDescriptor<SyncMetadata>()).count == 1)
         #expect(try context.fetch(FetchDescriptor<SyncFixtureItem>()).count == 1)
     }
+    #endif
 
     @Test
     func responseFixtureDefaultsToAnEmptyDeltaPage() {

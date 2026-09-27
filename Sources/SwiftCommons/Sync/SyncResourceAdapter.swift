@@ -1,3 +1,4 @@
+#if SwiftData
 import Foundation
 import SwiftData
 
@@ -27,7 +28,8 @@ public struct SyncResourceAdapter<
         businessKey: @escaping (Model) -> String,
         makeUpserts: @escaping ([Model]) -> [Upsert],
         makeDeletes: @escaping ([Model]) -> [Delete],
-        call: @escaping (SyncRequestDTO<Upsert, Delete>) async throws -> SyncResponseDTO<Change>,
+        call:
+            @escaping (SyncRequestDTO<Upsert, Delete>) async throws -> SyncResponseDTO<Change>,
         findExisting: @escaping (Change, ModelContext) throws -> Model?,
         changeKey: @escaping (Change) -> String?,
         isChangeDeleted: @escaping (Change) -> Bool,
@@ -74,3 +76,4 @@ public struct SyncResourceAdapter<
     /// Deletes synced rows before a full resync.
     public let purgeSynced: (ModelContext) throws -> Void
 }
+#endif

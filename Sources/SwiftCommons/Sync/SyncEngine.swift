@@ -1,3 +1,4 @@
+#if SwiftData
 import Foundation
 import OSLog
 import SwiftData
@@ -176,10 +177,12 @@ extension SyncEngine {
 
             while response.hasMore {
                 response = try await adapter.call(
-                    SyncRequestDTO(since: response.cursor, limit: limit, upserts: [], deletes: [])
+                    SyncRequestDTO(
+                        since: response.cursor, limit: limit, upserts: [], deletes: [])
                 )
                 sawFull =
-                    try ingest(adapter, response, into: &activeKeys, context: context) || sawFull
+                    try ingest(adapter, response, into: &activeKeys, context: context)
+                    || sawFull
                 update(metadata, with: response, persistCursor: !sawFull)
                 try context.save()
                 changeCount += response.serverChanges.count
@@ -227,7 +230,8 @@ extension SyncEngine {
             apply(status, to: model)
             if status.status == "blocked" || status.status == "rejected" {
                 await track(
-                    .itemBlocked(resource: resource, status: status.status, reason: status.reason)
+                    .itemBlocked(
+                        resource: resource, status: status.status, reason: status.reason)
                 )
             }
         }
@@ -324,3 +328,4 @@ public struct AnySyncResource {
 
     let run: (SyncEngine) async throws -> Void
 }
+#endif

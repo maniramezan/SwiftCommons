@@ -1,3 +1,4 @@
+#if SwiftData
 import Foundation
 import SwiftData
 import Testing
@@ -38,3 +39,4 @@ struct ModelContextFixturesTests {
         #expect(items.isEmpty)
     }
 }
+#endif

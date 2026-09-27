@@ -1,5 +1,7 @@
 import Foundation
 import SwiftCommons
+
+#if SwiftData
 import SwiftData
 
 /// Creates an in-memory `ModelContainer` for testing a ``SwiftCommons/SyncEngine``.
@@ -19,6 +21,7 @@ public func makeInMemorySyncContainer(
     let allTypes: [any PersistentModel.Type] = types + [SyncMetadata.self]
     return try ModelContainer.make(for: allTypes, inMemory: true)
 }
+#endif
 
 extension SyncResponseDTO {
 

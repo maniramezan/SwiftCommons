@@ -1,3 +1,4 @@
+#if SwiftData
 import Foundation
 import SwiftData
 import Testing
@@ -17,7 +18,8 @@ private final class ModelContainerTestItem {
 struct ModelContainerExtensionsTests {
     @Test
     func inMemoryContainerPersistsWithinASession() throws {
-        let container = try ModelContainer.make(for: ModelContainerTestItem.self, inMemory: true)
+        let container = try ModelContainer.make(
+            for: ModelContainerTestItem.self, inMemory: true)
         let context = ModelContext(container)
 
         context.insert(ModelContainerTestItem(name: "widget"))
@@ -41,3 +43,4 @@ struct ModelContainerExtensionsTests {
         #expect(items.isEmpty)
     }
 }
+#endif

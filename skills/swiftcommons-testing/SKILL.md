@@ -51,6 +51,10 @@ let context = try makeInMemoryModelContext(for: Item.self, Tag.self)   // fresh 
 For previews or app bootstrap (not tests), use `ModelContainer.make(for:inMemory:)` from
 `SwiftCommons`.
 
+These helpers and `makeInMemorySyncContainer(for:)` need the default `SwiftData` trait. A
+dependency declared with `traits: []` still gets the clock, `LoadingState` assertions, `Box`,
+`recordingCall`, and the sync DTO `.fixture(...)` builders.
+
 ## Capturing from `@Sendable` closures
 
 ```swift

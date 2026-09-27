@@ -1,8 +1,10 @@
 import Foundation
-import SwiftData
 
 @testable import SwiftCommons
 @testable import SwiftCommonsTestSupport
+
+#if SwiftData
+import SwiftData
 
 // A minimal syncable resource used to exercise the generic engine.
 
@@ -33,6 +35,7 @@ final class SyncItem: SyncableModel {
     var syncState: SyncState
     var localUpdatedAt: Date
 }
+#endif
 
 struct ItemUpsert: Encodable, Sendable {
     let key: String
@@ -54,6 +57,7 @@ struct ItemChange: Decodable, Sendable {
 typealias ItemResponse = SyncResponseDTO<ItemChange>
 
 enum SyncFixtures {
+    #if SwiftData
     static func makeContainer() throws -> ModelContainer {
         try makeInMemorySyncContainer(for: SyncItem.self)
     }
@@ -70,14 +74,20 @@ enum SyncFixtures {
         SyncResourceAdapter(
             resourceName: resourceName,
             fetchPending: { context in
-                try context.fetch(FetchDescriptor<SyncItem>()).filter { $0.syncState != .synced }
+                try context.fetch(FetchDescriptor<SyncItem>()).filter {
+                    $0.syncState != .synced
+                }
             },
             businessKey: { $0.key.lowercased() },
             makeUpserts: { models in
-                models.filter { !$0.isTombstoned }.map { ItemUpsert(key: $0.key, title: $0.title) }
+                models.filter { !$0.isTombstoned }.map {
+                    ItemUpsert(key: $0.key, title: $0.title)
+                }
             },
             makeDeletes: { models in
-                models.filter { $0.isTombstoned }.map { ItemDelete(id: $0.serverId, key: $0.key) }
+                models.filter { $0.isTombstoned }.map {
+                    ItemDelete(id: $0.serverId, key: $0.key)
+                }
             },
             call: call,
             findExisting: { change, context in
@@ -114,6 +124,7 @@ enum SyncFixtures {
             }
         )
     }
+    #endif
 
     static func response(
         mode: String = "delta",

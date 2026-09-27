@@ -1,3 +1,4 @@
+#if SwiftData
 import Foundation
 import SwiftData
 
@@ -51,3 +52,4 @@ extension ModelContainer {
         return try ModelContainer(for: schema, configurations: [configuration])
     }
 }
+#endif

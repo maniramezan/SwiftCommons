@@ -9,7 +9,8 @@ Shared Swift utilities and helpers for reusable app code.
 ## Requirements
 
 - Swift 6.2 toolchain
-- macOS 14+, iOS 17+, Mac Catalyst 17+ (required by the SwiftData-backed APIs)
+- macOS 14+, iOS 17+, Mac Catalyst 17+ (the package's declared minimums; they apply whether or
+  not the `SwiftData` trait is enabled)
 
 ## Installation
 
@@ -17,7 +18,7 @@ Add SwiftCommons as a Swift Package Manager dependency:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.8.4")
+    .package(url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.12.0")
 ]
 ```
 
@@ -38,10 +39,28 @@ SwiftCommons ships two products:
 ]),
 ```
 
-CSV helpers are opt-in via the `CSV` package trait:
+### Package traits
+
+| Trait | Default | Enables |
+|---|---|---|
+| `SwiftData` | on | `ModelContainer.make(for:inMemory:)`, `SyncEngine`, `SyncResourceAdapter`, `SyncMetadata`, and the SwiftData test helpers (`makeInMemoryModelContext`, `makeInMemorySyncContainer`) |
+| `CSV` | off | `CSV.parseRows` / `CSV.serializeRows` |
+
+With no `traits:` argument you get the defaults, so the `SwiftData` APIs are included. A package that
+doesn't use SwiftData (for example, a networking library) can leave it out and keep everything else,
+including the sync DTOs, `SyncableModel`, `SyncState`, and `SyncEvent`:
 
 ```swift
-.package(url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.3.0", traits: ["CSV"])
+.package(url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.12.0", traits: [])
+```
+
+Listing traits replaces the defaults instead of adding to them. To add CSV and keep SwiftData,
+include `.defaults`:
+
+```swift
+.package(
+    url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.12.0",
+    traits: [.defaults, "CSV"])
 ```
 
 ## Features
