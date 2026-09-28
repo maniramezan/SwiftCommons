@@ -31,42 +31,12 @@ extension String {
         isBlank ? nil : trimmed
     }
 
-    /// Returns a copy with all leading occurrences of `character` removed.
-    ///
-    ///     "///users/".trimmingLeading("/") // "users/"
-    ///
-    /// Compares whole Swift characters, including extended grapheme clusters.
-    /// - Parameter character: The character to remove from the start.
-    /// - Returns: The remaining string, or an empty string if every character matched.
-    @inlinable
-    public func trimmingLeading(_ character: Character) -> String {
-        String(drop(while: { $0 == character }))
-    }
-
-    /// Returns a copy with all trailing occurrences of `character` removed.
-    ///
-    ///     "/users///".trimmingTrailing("/") // "/users"
-    ///
-    /// Compares whole Swift characters, including extended grapheme clusters.
-    /// - Parameter character: The character to remove from the end.
-    /// - Returns: The remaining string, or an empty string if every character matched.
-    @inlinable
-    public func trimmingTrailing(_ character: Character) -> String {
-        var end = endIndex
-        while end > startIndex {
-            let previous = index(before: end)
-            guard self[previous] == character else { break }
-            end = previous
-        }
-        return String(self[..<end])
-    }
-
     /// Prepends `character` unless it is already the first character.
     ///
     ///     "users".ensuringStarts(with: "/") // "/users"
     ///
     /// An empty string becomes the character. Existing repeated prefixes are
-    /// preserved; use ``trimmingLeading(_:)`` first to collapse repetitions.
+    /// preserved; use `trimmingPrefix(while:)` first to collapse repetitions.
     /// - Parameter character: The character to add when absent.
     /// - Returns: The original string or a copy with the character prepended.
     @inlinable
