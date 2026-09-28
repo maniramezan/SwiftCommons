@@ -30,4 +30,17 @@ extension String {
     public var nilIfBlank: String? {
         isBlank ? nil : trimmed
     }
+
+    /// Prepends `character` unless it is already the first character.
+    ///
+    ///     "users".ensuringStarts(with: "/") // "/users"
+    ///
+    /// An empty string becomes the character. Existing repeated prefixes are
+    /// preserved; use `trimmingPrefix(while:)` first to collapse repetitions.
+    /// - Parameter character: The character to add when absent.
+    /// - Returns: The original string or a copy with the character prepended.
+    @inlinable
+    public func ensuringStarts(with character: Character) -> String {
+        first == character ? self : String(character) + self
+    }
 }
