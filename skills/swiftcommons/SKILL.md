@@ -21,7 +21,6 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Trim repeated boundary characters | `text.trimmingLeading("/")`, `text.trimmingTrailing("/")` |
 | Add a missing first character | `text.ensuringStarts(with: "/")` (empty becomes `"/"`; repeated prefixes stay intact) |
 | Unicode letter or number | `character.isAlphanumeric`; combine with `.isASCII` for ASCII-only validation |
-| Escape a raw URI component | `text.percentEncodedRFC3986` (UTF-8; spaces → `%20`; existing escapes are escaped again) |
 | Parse config text | `Bool(parsing:)` (true/false, 1/0, yes/no, on/off), `Int(parsing:)`, `Double(parsing:)` |
 | Log a decode failure | `logger.errorPublic("Decode failed: \(decodingError.debugSummary)")` → `keyNotFound 'id' at items[2].user` |
 | Encode a boolean flag | `String(flag: true)` → `"1"` |
