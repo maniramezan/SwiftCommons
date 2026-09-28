@@ -18,6 +18,9 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Optional fallback with lazy default | `optional.ifNil(expensiveDefault())` |
 | Store / compare an arbitrary error as a value | `AnySendableError(error)` (keeps type, domain, code, descriptions; `Hashable`; `.identity` for log identity) |
 | Trim / blank checks | `text.trimmed`, `text.isBlank`, `text.nilIfBlank` |
+| Trim suffixes | `text.trimmingSuffix(".json")`, `text.trimmingSuffix(while: { $0 == "/" })`, or `text.trimmingSuffix(regex)`; mutate with the matching `trimSuffix` overload |
+| Add a missing first character | `text.ensuringStarts(with: "/")` (empty becomes `"/"`; repeated prefixes stay intact) |
+| Unicode letter or number | `character.isAlphanumeric`; combine with `.isASCII` for ASCII-only validation |
 | Parse config text | `Bool(parsing:)` (true/false, 1/0, yes/no, on/off), `Int(parsing:)`, `Double(parsing:)` |
 | Log a decode failure | `logger.errorPublic("Decode failed: \(decodingError.debugSummary)")` → `keyNotFound 'id' at items[2].user` |
 | Encode a boolean flag | `String(flag: true)` → `"1"` |
@@ -58,6 +61,8 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
   flow.
 
 ## Pitfalls
+
+- **Sequence suffixes trim once.** `trimmingSuffix("/")` removes one trailing slash; `trimmingSuffix(while: { $0 == "/" })` removes all trailing slashes. These return a subsequence, like Swift’s existing `trimmingPrefix` APIs. Use the standard library for prefix trimming.
 
 - **Cached formatters are shared per thread.** Treat the returned `DateFormatter` /
   `NumberFormatter` as read-only. Never set `dateFormat`, `locale`, etc. on it, and don't pass it
