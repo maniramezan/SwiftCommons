@@ -1,4 +1,8 @@
+import Foundation
+
 extension String {
+    private static let allowedEscapePunctuation = CharacterSet(charactersIn: "-._~")
+
     /// Encodes a raw URI component using RFC 3986's unreserved character set.
     ///
     /// Only ASCII letters, digits, `-`, `.`, `_`, and `~` remain unchanged.
@@ -14,11 +18,14 @@ extension String {
         var encoded: [UInt8] = []
         encoded.reserveCapacity(utf8.count)
         for byte in utf8 {
-            switch byte {
-            case 65...90, 97...122, 48...57, 45, 46, 95, 126:
+            let scalar = UnicodeScalar(byte)
+            let character = Character(scalar)
+            if character.isASCII
+                && (character.isAlphanumeric || Self.allowedEscapePunctuation.contains(scalar))
+            {
                 encoded.append(byte)
-            default:
-                encoded.append(37)
+            } else {
+                encoded.append(UInt8(ascii: "%"))
                 encoded.append(hex[Int(byte >> 4)])
                 encoded.append(hex[Int(byte & 0x0F)])
             }
