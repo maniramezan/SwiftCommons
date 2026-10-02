@@ -32,6 +32,12 @@ Always poll `waiterCount` before `advance(by:)`. Advancing before the code under
 registered its sleep has no effect, and the test hangs or flakes. Production code should keep the
 default clock parameter; only tests pass one in.
 
+ManualClock sleeps throw CancellationError and remove their waiter when the sleeping task is cancelled.
+Cancelled sleeps do not require advancing the clock to finish. `sleepCount` counts
+cumulative registered sleeps, including ones later cancelled. Use
+`try await clock.waitForSleepCount(expectedCount)` to observe registration with a bounded
+real-time deadline when superseded sleepers must register before cancellation.
+
 ## `LoadingState`
 
 ```swift

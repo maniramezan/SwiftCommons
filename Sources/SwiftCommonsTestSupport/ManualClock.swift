@@ -17,9 +17,13 @@ import SwiftCommons
 /// instantaneous instead of depending on real, wall-clock delays.
 public actor ManualClock: DelayClock {
     private struct Waiter {
+        let id: UUID
         let wakeAt: Duration
-        let continuation: CheckedContinuation<Void, Never>
+        let continuation: CheckedContinuation<Void, any Error>
     }
+
+    /// Total positive-duration sleeps registered, including sleepers later cancelled.
+    public private(set) var sleepCount = 0
 
     private var elapsed: Duration = .zero
     private var waiters: [Waiter] = []
@@ -30,11 +34,49 @@ public actor ManualClock: DelayClock {
     /// Suspends until the clock has been advanced by at least `duration`
     /// beyond its current elapsed time.
     public func sleep(for duration: Duration) async throws {
+        try Task.checkCancellation()
         guard duration > .zero else { return }
+        let id = UUID()
         let wakeAt = elapsed + duration
-        await withCheckedContinuation { continuation in
-            waiters.append(Waiter(wakeAt: wakeAt, continuation: continuation))
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, any Error>) in
+                if Task.isCancelled {
+                    continuation.resume(throwing: CancellationError())
+                } else {
+                    sleepCount += 1
+                    waiters.append(Waiter(id: id, wakeAt: wakeAt, continuation: continuation))
+                }
+            }
+        } onCancel: {
+            Task { await self.cancelWaiter(id) }
         }
+        try Task.checkCancellation()
+    }
+
+    /// Waits for a cumulative number of sleeps to register, without advancing fake time.
+    /// - Parameters:
+    ///   - count: The nonnegative minimum registered sleep count.
+    ///   - timeout: The nonnegative monotonic observation budget.
+    /// - Returns: Whether enough sleeps registered before the deadline.
+    /// - Throws: Cancellation of the observing task.
+    public func waitForSleepCount(_ count: Int, timeout: Duration = .seconds(2)) async throws
+        -> Bool
+    {
+        precondition(count >= 0 && timeout >= .zero)
+        let deadline = ContinuousClock.now.advanced(by: timeout)
+        while sleepCount < count {
+            try Task.checkCancellation()
+            guard ContinuousClock.now < deadline else { return false }
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        try Task.checkCancellation()
+        return true
+    }
+
+    private func cancelWaiter(_ id: UUID) {
+        guard let index = waiters.firstIndex(where: { $0.id == id }) else { return }
+        waiters.remove(at: index).continuation.resume(throwing: CancellationError())
     }
 
     /// Advances the clock by `duration`, resuming any waiters whose requested
