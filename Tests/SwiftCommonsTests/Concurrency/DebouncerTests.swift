@@ -14,23 +14,18 @@ struct DebouncerTests {
     }
 
     @Test
-    func onlyRunsTheLastActionWithinTheDelayWindow() async {
+    func onlyRunsTheLastActionWithinTheDelayWindow() async throws {
         let clock = ManualClock()
         let debouncer = Debouncer(delay: .milliseconds(50), clock: clock)
         let recorder = Recorder()
 
         for value in 1...5 {
             await debouncer.run { await recorder.record(value) }
+            try #require(await clock.waitForSleepCount(value))
         }
 
-        // Every call (including the four superseded ones) reaches its
-        // `clock.sleep(for:)` and registers a waiter; only the last one's
-        // action actually runs once resumed, since `Debouncer` checks
-        // `Task.isCancelled` before invoking it. Wait for all five to
-        // register before advancing so none are missed.
-        while await clock.waiterCount < 5 {
-            await Task.yield()
-        }
+        // Superseded sleeps are removed on cancellation; every action has registered
+        // before we advance, so the final action cannot miss the virtual deadline.
         await clock.advance(by: .milliseconds(50))
 
         var iterations = 0
@@ -66,19 +61,17 @@ struct DebouncerTests {
     }
 
     @Test
-    func cancelPreventsThePendingActionFromRunning() async {
+    func cancelPreventsThePendingActionFromRunning() async throws {
         let clock = ManualClock()
         let debouncer = Debouncer(delay: .milliseconds(30), clock: clock)
         let recorder = Recorder()
 
         await debouncer.run { await recorder.record(1) }
+        try #require(await clock.waitForSleepCount(1))
         await debouncer.cancel()
-
-        while await clock.waiterCount == 0 {
-            await Task.yield()
-        }
-        await clock.advance(by: .milliseconds(30))
-        await Task.yield()
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while await clock.waiterCount > 0, ContinuousClock.now < deadline { await Task.yield() }
+        #expect(await clock.waiterCount == 0)
 
         #expect(await recorder.values == [])
     }
