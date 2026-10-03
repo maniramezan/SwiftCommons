@@ -8,6 +8,27 @@ import Testing
 @MainActor
 struct ManualClockTests {
     @Test
+    func countedSleepCanBeAdvancedBeforeWaitingForItsContinuation() async throws {
+        let clock = ManualClock()
+        for count in 1...100 {
+            async let sleep: Void = clock.sleep(for: .seconds(1))
+            try #require(await clock.waitForSleepCount(count))
+            await clock.advance(by: .seconds(1))
+            try await sleep
+        }
+        #expect(await clock.sleepCount == 100)
+        #expect(await clock.waiterCount == 0)
+    }
+
+    @Test
+    func sleepCountObservationTimesOutWithoutAdvancing() async throws {
+        let clock = ManualClock()
+        #expect(try await clock.waitForSleepCount(1, timeout: .zero) == false)
+        #expect(try await clock.waitForSleepCount(0, timeout: .zero))
+        #expect(await clock.sleepCount == 0)
+    }
+
+    @Test
     func sleepSuspendsUntilAdvancedPastDuration() async {
         let clock = ManualClock()
         let finished = Box(false)

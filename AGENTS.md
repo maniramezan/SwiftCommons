@@ -4,7 +4,7 @@ Primary agent guidance for this repository (Codex, Claude, and any other coding 
 
 ## Project Overview
 
-SwiftCommons is a Swift Package Manager library providing Foundation extensions and utilities. It targets macOS 15+, iOS 18+, and Mac Catalyst 18+ (declared for the whole package, with or without the `SwiftData` trait). The package uses Swift 6 language mode (`swift-tools-version: 6.2`) and has no external dependencies.
+SwiftCommons is a Swift Package Manager library providing Foundation extensions and utilities. It targets macOS 15+, iOS 18+, and Mac Catalyst 18+ (declared for the whole package, with or without the `SwiftData` trait). The package uses Swift 6 language mode (`swift-tools-version: 6.2`) and its main library has no runtime dependencies. `SwiftCommonsTestSupport` uses TestCommons 0.3.0 for its fake clock.
 
 ## Build and Test
 
@@ -58,7 +58,7 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Sources/SwiftCommonsTestSupport`: a separate library product with test-only helpers for consumers
   of `SwiftCommons` (fake clock, `LoadingState` assertions, in-memory SwiftData context helper, and
   sync fixtures: `makeInMemorySyncContainer(for:)`, `SyncResponseDTO.fixture(...)`,
-  `SyncAppliedDTO.fixture(...)`). Depends on `SwiftCommons`; never add app-facing (non-test) APIs here.
+  `SyncAppliedDTO.fixture(...)`). Depends on `SwiftCommons` and `TestCommons`; never add app-facing (non-test) APIs here.
 - `Tests/SwiftCommonsTests`: Swift Testing coverage mirroring the `Sources` structure (covers both
   `SwiftCommons` and `SwiftCommonsTestSupport`).
 
@@ -140,7 +140,7 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `SyncEngine` (`@MainActor`) drives offline sync for SwiftData `@Model` rows conforming to `SyncableModel`; each resource plugs in via a `SyncResourceAdapter` (struct of closures) and the engine owns the contract (ack guard, pending guard, full-snapshot reconciliation, pagination drain, full-resync recovery).
 - `SyncableModel` requires `isTombstoned`, NOT `isDeleted`: on a SwiftData `@Model` a stored `isDeleted` is shadowed by `PersistentModel.isDeleted` (context hard-delete state), so writes don't read back on the live object. Never name a soft-delete flag `isDeleted` on a `@Model`.
 - `SwiftCommonsTestSupport` (separate product) provides: `ManualClock` (fake, manually
-  advanced `DelayClock` — poll `waiterCount` before calling `advance(by:)` to avoid racing
+  advanced `DelayClock` — use bounded `waitForSleepCount` before calling `advance(by:)` to avoid racing
   against code under test that hasn't registered its sleep yet); `expectLoaded(_:)`/`expectFailed(_:)`
   for asserting on `LoadingState`; `makeInMemoryModelContext(for:)` for a ready-to-use SwiftData
   `ModelContext`; and `Box<Value>` (`@MainActor` mutable capture reference) plus `recordingCall(returning:into:)`
@@ -179,3 +179,9 @@ the same PR.
 
 - Add or update tests under `Tests/SwiftCommonsTests` for behavior changes.
 - If you discover repo-wide guidance helpful to other agents, add it here (not in `CLAUDE.md`).
+
+## Conditional body readability
+
+Short, obvious early exits may stay on one line (for example, `guard let self else { return }`).
+Use multiline bodies for complex conditions, error construction, or meaningful work.
+This is a review guideline; Apple’s official `swift format` remains the only formatting tool.

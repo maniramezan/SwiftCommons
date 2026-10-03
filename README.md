@@ -25,7 +25,7 @@ dependencies: [
 SwiftCommons ships two products:
 
 - **`SwiftCommons`** — the main library. Add this to any target that uses the APIs below.
-- **`SwiftCommonsTestSupport`** — test-only helpers (fake clock, `LoadingState` assertions,
+- **`SwiftCommonsTestSupport`** — test-only helpers (a TestCommons-backed fake clock, `LoadingState` assertions,
   in-memory SwiftData context, sync test fixtures). Add this to your test targets only.
 
 ```swift
@@ -283,11 +283,14 @@ let previewContainer = try ModelContainer.make(for: Item.self, inMemory: true)
 Add the `SwiftCommonsTestSupport` product to your test target to get:
 
 ```swift
+import SwiftCommons
 import SwiftCommonsTestSupport
+import Testing
 
 let clock = ManualClock()
 let debouncer = Debouncer(delay: .seconds(1), clock: clock)
-// ... trigger debounced work, then:
+await debouncer.run { /* action under test */ }
+try #require(await clock.waitForSleepCount(1))
 await clock.advance(by: .seconds(1)) // resumes the pending action deterministically
 
 let context = try makeInMemoryModelContext(for: Item.self)
