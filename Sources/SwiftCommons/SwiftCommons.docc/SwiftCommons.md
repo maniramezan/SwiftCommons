@@ -6,8 +6,8 @@ Foundation extensions and small, dependency-free utilities for reusable app code
 
 SwiftCommons is a lightweight Swift Package Manager library of Foundation
 extensions and helpers used across Apple-platform apps. It has no external
-runtime dependencies, builds in Swift 6 language mode, and targets macOS 14+,
-iOS 17+, and Mac Catalyst 17+.
+runtime dependencies, builds in Swift 6 language mode, and targets macOS 15+,
+iOS 18+, and Mac Catalyst 18+.
 
 ```swift
 import SwiftCommons

@@ -1,5 +1,5 @@
 import Foundation
-import os
+import Synchronization
 
 /// Fans one source of values out to any number of independent `AsyncStream`s.
 ///
@@ -33,7 +33,7 @@ public final class AsyncBroadcaster<Element: Sendable>: Sendable {
 
     private let replaysLatest: Bool
     private let bufferingPolicy: AsyncStream<Element>.Continuation.BufferingPolicy
-    private let state: OSAllocatedUnfairLock<State>
+    private let state: Mutex<State>
 
     /// Creates a broadcaster.
     ///
@@ -50,7 +50,7 @@ public final class AsyncBroadcaster<Element: Sendable>: Sendable {
     ) {
         self.replaysLatest = replaysLatest
         self.bufferingPolicy = bufferingPolicy
-        self.state = OSAllocatedUnfairLock(initialState: State())
+        self.state = Mutex(State())
     }
 
     /// Creates a broadcaster that replays the latest value, seeded with `initialValue`.

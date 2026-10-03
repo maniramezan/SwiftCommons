@@ -1,5 +1,6 @@
 import Foundation
 import SwiftCommons
+import TestCommons
 
 /// A fake, manually-advanced clock for testing code built on
 /// ``SwiftCommons/DelayClock``, such as `withRetry` and `Debouncer`.
@@ -11,22 +12,16 @@ import SwiftCommons
 ///     let debouncer = Debouncer(delay: .seconds(1), clock: clock)
 ///
 ///     await debouncer.run { /* ... */ }
+///     try #require(await clock.waitForSleepCount(1))
 ///     await clock.advance(by: .seconds(1)) // resumes the pending action
 ///
 /// This makes tests for debounced or retried behavior deterministic and
 /// instantaneous instead of depending on real, wall-clock delays.
 public actor ManualClock: DelayClock {
-    private struct Waiter {
-        let id: UUID
-        let wakeAt: Duration
-        let continuation: CheckedContinuation<Void, any Error>
-    }
+    private let clock = TestCommons.ManualClock()
 
     /// Total positive-duration sleeps registered, including sleepers later cancelled.
     public private(set) var sleepCount = 0
-
-    private var elapsed: Duration = .zero
-    private var waiters: [Waiter] = []
 
     /// Creates a fake clock starting at time zero.
     public init() {}
@@ -36,21 +31,11 @@ public actor ManualClock: DelayClock {
     public func sleep(for duration: Duration) async throws {
         try Task.checkCancellation()
         guard duration > .zero else { return }
-        let id = UUID()
-        let wakeAt = elapsed + duration
-        try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation {
-                (continuation: CheckedContinuation<Void, any Error>) in
-                if Task.isCancelled {
-                    continuation.resume(throwing: CancellationError())
-                } else {
-                    sleepCount += 1
-                    waiters.append(Waiter(id: id, wakeAt: wakeAt, continuation: continuation))
-                }
-            }
-        } onCancel: {
-            Task { await self.cancelWaiter(id) }
-        }
+        // Capture the deadline before counting the sleep. If a caller advances after
+        // observing sleepCount, a late registration still sees the elapsed deadline.
+        let deadline = clock.now.advanced(by: duration)
+        sleepCount += 1
+        try await clock.sleep(until: deadline)
         try Task.checkCancellation()
     }
 
@@ -64,19 +49,14 @@ public actor ManualClock: DelayClock {
         -> Bool
     {
         precondition(count >= 0 && timeout >= .zero)
-        let deadline = ContinuousClock.now.advanced(by: timeout)
-        while sleepCount < count {
-            try Task.checkCancellation()
-            guard ContinuousClock.now < deadline else { return false }
-            try await Task.sleep(for: .milliseconds(1))
+        do {
+            _ = try await waitUntil(
+                timeout: timeout, pollInterval: .milliseconds(1),
+                operation: { await self.sleepCount }, matching: { $0 >= count })
+            return true
+        } catch is ObservationTimeout<Int> {
+            return false
         }
-        try Task.checkCancellation()
-        return true
-    }
-
-    private func cancelWaiter(_ id: UUID) {
-        guard let index = waiters.firstIndex(where: { $0.id == id }) else { return }
-        waiters.remove(at: index).continuation.resume(throwing: CancellationError())
     }
 
     /// Advances the clock by `duration`, resuming any waiters whose requested
@@ -85,28 +65,16 @@ public actor ManualClock: DelayClock {
     ///   `.zero`.
     public func advance(by duration: Duration) {
         precondition(duration >= .zero, "duration must be at least .zero")
-        elapsed += duration
-
-        let ready = waiters.filter { $0.wakeAt <= elapsed }
-        waiters.removeAll { $0.wakeAt <= elapsed }
-        for waiter in ready.sorted(by: { $0.wakeAt < $1.wakeAt }) {
-            waiter.continuation.resume()
-        }
+        clock.advance(by: duration)
     }
 
     /// The number of `sleep(for:)` calls currently suspended, waiting for the
     /// clock to advance far enough to resume them.
     ///
-    /// Because code under test typically starts running on a separate `Task`,
-    /// calling ``advance(by:)`` immediately after starting that work is
-    /// racy — the sleep may not have been registered yet, so the advance
-    /// would have no effect. Poll this property to deterministically wait
-    /// until the expected number of sleeps have actually started:
-    ///
-    ///     let task = Task { try await withRetry(..., clock: clock) { ... } }
-    ///     while await clock.waiterCount == 0 { await Task.yield() }
-    ///     await clock.advance(by: someDelay)
+    /// Use ``waitForSleepCount(_:timeout:)`` before advancing to observe sleeps with
+    /// a bounded wait, including sleeps that were later cancelled. This property
+    /// reports only currently suspended sleeps and is useful for cancellation assertions.
     public var waiterCount: Int {
-        waiters.count
+        clock.sleeperCount
     }
 }

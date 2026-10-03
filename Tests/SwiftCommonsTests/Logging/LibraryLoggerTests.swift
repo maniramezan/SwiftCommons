@@ -1,6 +1,6 @@
 import Foundation
+import Synchronization
 import Testing
-import os
 
 @testable import SwiftCommons
 
@@ -78,7 +78,7 @@ struct LibraryLoggerTests {
     func skippedMessagesAreNeverBuilt() {
         let logger = LibraryLogger(subsystem: "LibraryLoggerTests", defaultLevel: .error)
         let category = logger.category("network")
-        let builds = OSAllocatedUnfairLock(initialState: 0)
+        let builds = Mutex(0)
         let message: @Sendable () -> String = {
             builds.withLock { $0 += 1 }
             return "message"
@@ -145,7 +145,7 @@ struct LibraryLoggerTests {
     }
 
     private final class EmissionRecorder: Sendable {
-        private let storage = OSAllocatedUnfairLock<[Emission]>(initialState: [])
+        private let storage = Mutex<[Emission]>([])
 
         var emissions: [Emission] {
             storage.withLock { $0 }

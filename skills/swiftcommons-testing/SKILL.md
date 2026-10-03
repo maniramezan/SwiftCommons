@@ -21,17 +21,24 @@ into app targets.
 in real time.
 
 ```swift
-let clock = ManualClock()
-let task = Task { try await withRetry(attempts: 3, delay: .seconds(5), clock: clock) { try await flaky() } }
+import SwiftCommonsTestSupport
+import Testing
 
-while await clock.waiterCount == 0 { await Task.yield() }   // wait until the sleep is registered
-await clock.advance(by: .seconds(5))
+@Test func manualSleepFinishesWhenAdvanced() async throws {
+    let clock = ManualClock()
+    async let sleep: Void = clock.sleep(for: .seconds(5))
+    try #require(await clock.waitForSleepCount(1))
+    await clock.advance(by: .seconds(5))
+    try await sleep
+}
 ```
 
-Always poll `waiterCount` before `advance(by:)`. Advancing before the code under test has
-registered its sleep has no effect, and the test hangs or flakes. Production code should keep the
-default clock parameter; only tests pass one in.
+Observe the expected cumulative sleep count with `waitForSleepCount` before advancing.
+This bounded wait fails clearly if the work never reaches its sleep. In retry tests, observe
+an additional sleep before advancing each retry delay. Await child tasks before inspecting
+results. Production code should keep the default clock parameter; only tests pass one in.
 
+The public `ManualClock` adapter uses TestCommons’ clock internally and keeps the `DelayClock` API.
 ManualClock sleeps throw CancellationError and remove their waiter when the sleeping task is cancelled.
 Cancelled sleeps do not require advancing the clock to finish. `sleepCount` counts
 cumulative registered sleeps, including ones later cancelled. Use

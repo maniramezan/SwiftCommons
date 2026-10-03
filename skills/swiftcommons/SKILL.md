@@ -5,7 +5,7 @@ description: Use when writing or reviewing Swift code in an app or package that 
 
 # SwiftCommons
 
-SwiftCommons is a dependency-free Swift 6 library (iOS 17+, macOS 14+, Mac Catalyst 17+) of
+SwiftCommons is a dependency-free Swift 6 library (iOS 18+, macOS 15+, Mac Catalyst 18+) of
 Foundation extensions and app utilities. Before writing a helper, check this table. If the
 project imports `SwiftCommons`, use the library API instead of reimplementing it.
 

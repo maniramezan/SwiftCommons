@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "SwiftCommons",
-    platforms: [.macOS(.v14), .iOS(.v17), .macCatalyst(.v17)],
+    platforms: [.macOS(.v15), .iOS(.v18), .macCatalyst(.v18)],
     products: [
         .library(
             name: "SwiftCommons",
@@ -23,14 +23,18 @@ let package = Package(
         .default(enabledTraits: ["SwiftData"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0")
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0"),
+        .package(url: "https://github.com/maniramezan/SwiftTestCommons.git", from: "0.3.0"),
     ],
     targets: [
         .target(
             name: "SwiftCommons"),
         .target(
             name: "SwiftCommonsTestSupport",
-            dependencies: ["SwiftCommons"]),
+            dependencies: [
+                "SwiftCommons",
+                .product(name: "TestCommons", package: "SwiftTestCommons"),
+            ]),
         .testTarget(
             name: "SwiftCommonsTests",
             dependencies: ["SwiftCommons", "SwiftCommonsTestSupport"],
