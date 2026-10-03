@@ -9,7 +9,7 @@ Shared Swift utilities and helpers for reusable app code.
 ## Requirements
 
 - Swift 6.2 toolchain
-- macOS 14+, iOS 17+, Mac Catalyst 17+ (the package's declared minimums; they apply whether or
+- macOS 15+, iOS 18+, Mac Catalyst 18+ (the package's declared minimums; they apply whether or
   not the `SwiftData` trait is enabled)
 
 ## Installation

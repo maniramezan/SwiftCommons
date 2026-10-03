@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 import os
 
 /// A level-gated OSLog front end for library packages, whose verbosity the library's users
@@ -138,7 +139,7 @@ public final class LibraryLogger: Sendable {
     /// The OSLog subsystem every category logs under.
     public let subsystem: String
 
-    private let threshold: OSAllocatedUnfairLock<Level>
+    private let threshold: Mutex<Level>
 
     /// Called with the level and category of every message that passes the level gate. Tests
     /// only; OSLog output can't be read back.
@@ -160,7 +161,7 @@ public final class LibraryLogger: Sendable {
         emissionObserver: (@Sendable (Level, String) -> Void)?
     ) {
         self.subsystem = subsystem
-        self.threshold = OSAllocatedUnfairLock(initialState: defaultLevel)
+        self.threshold = Mutex(defaultLevel)
         self.emissionObserver = emissionObserver
     }
 

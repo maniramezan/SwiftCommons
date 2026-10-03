@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "SwiftCommons",
-    platforms: [.macOS(.v14), .iOS(.v17), .macCatalyst(.v17)],
+    platforms: [.macOS(.v15), .iOS(.v18), .macCatalyst(.v18)],
     products: [
         .library(
             name: "SwiftCommons",
