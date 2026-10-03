@@ -1,5 +1,5 @@
 {
-  "originHash" : "16abfaf525b695f9cb5c3ed3bed6d74f800109c2a12f49549385c1d6c4bb6fc7",
+  "originHash" : "d6a034006c2dd7897d83fa35eb249ce6baf2f853ee6aee78b34ff784fdf359b5",
   "pins" : [
     {
       "identity" : "swift-docc-plugin",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "b45d1f2ed151d057b54504d653e0da5552844e34",
         "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "swifttestcommons",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/maniramezan/SwiftTestCommons.git",
+      "state" : {
+        "revision" : "1a71da25cbcd6763ee334614d488a9d1bd10b04f",
+        "version" : "0.3.0"
       }
     }
   ],
