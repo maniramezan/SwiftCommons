@@ -1,27 +1,22 @@
 version: 2
+multi-ecosystem-groups:
+  dependencies:
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 1
 updates:
   - package-ecosystem: swift
     directory: /
-    schedule:
-      interval: weekly
-      day: monday
-    groups:
-      swift-dependencies:
-        patterns:
-          - "*"
-
+    patterns:
+      - '*'
+    multi-ecosystem-group: dependencies
   - package-ecosystem: github-actions
     directory: /
-    schedule:
-      interval: weekly
-      day: monday
-    groups:
-      github-actions:
-        patterns:
-          - "*"
     ignore:
-      # v3 currently resolves to a prerelease (3.0.0-beta.1, Swiftly-based).
-      # Stay on the latest stable 2.x until 3.x ships a non-beta release.
       - dependency-name: swift-actions/setup-swift
         update-types:
           - version-update:semver-major
+    patterns:
+      - '*'
+    multi-ecosystem-group: dependencies
