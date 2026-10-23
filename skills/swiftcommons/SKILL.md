@@ -47,6 +47,10 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Measure hot paths | `SignpostRecorder(subsystem:category:).measure("name") { … }` |
 | Logging inside a library package (user-controlled level) | `LibraryLogger(subsystem:)` + `.category("network")`; users call `setLevel(.debug)` |
 | Offline sync | `SyncEngine` + `SyncResourceAdapter` — see the `swiftcommons-sync` skill |
+| On-device speech-to-text (live mic) | `SwiftCommonsSpeech` product: `SpeechRecognitionSession().start(SpeechRecognitionConfiguration(locale:autoStopAfterSilence:))` → `.ready` / `.audioLevel` / `.transcript(SpeechTranscript)` / `.silenceDetected`; depend on `SpeechRecognizing` for fakes |
+| Speech permissions / model download | `SpeechRecognitionPermissions.requestAll()`, `SpeechModelAssets.status(for:)` / `.install(for:progress:)` |
+| Text-to-speech | `SpeechSynthesisSession().speak(SpeechSynthesisRequest(text:languageCode:))` → `AsyncStream<SpeechSynthesisEvent>`; `SpeechVoice.best(for: "en-US")` |
+| Grade a read-aloud attempt | `TranscriptAlignment.align(reference:heard:)` → per-word `.match` / `.lowConfidence` / `.substitution` / `.omission` / `.insertion`, `.score`, `.completeness` |
 
 ## Logging conventions
 
@@ -86,6 +90,12 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
   `SyncResourceAdapter`, and `SyncMetadata` need the `SwiftData` trait, which is on unless the
   dependency lists `traits:`. Listing traits replaces the defaults, so write
   `traits: [.defaults, "CSV"]`, not `traits: ["CSV"]`, to keep them. `traits: []` drops them.
+- **Speech sessions don't configure `AVAudioSession`.** On iOS, activate `.playAndRecord` (or
+  `.playback` for speech only) yourself before `start(_:)` / `speak(_:)`.
+- **Don't bias recognition when grading.** Non-empty `contextualStrings` make the recognizer hear
+  the expected sentence; `TranscriptAlignment` measures intelligibility, not phoneme accuracy.
+- **`SpeechRecognitionSession.start` throws `.modelNotInstalled`** until
+  `SpeechModelAssets.install(for:)` has run for that locale.
 - **`Locale.identifier(language:country:)` uses a curated subset.** The `Language` and `Country`
   enums don't cover every ISO code.
 

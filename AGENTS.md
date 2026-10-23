@@ -59,8 +59,19 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   of `SwiftCommons` (fake clock, `LoadingState` assertions, in-memory SwiftData context helper, and
   sync fixtures: `makeInMemorySyncContainer(for:)`, `SyncResponseDTO.fixture(...)`,
   `SyncAppliedDTO.fixture(...)`). Depends on `SwiftCommons` and `TestCommons`; never add app-facing (non-test) APIs here.
-- `Tests/SwiftCommonsTests`: Swift Testing coverage mirroring the `Sources` structure (covers both
-  `SwiftCommons` and `SwiftCommonsTestSupport`).
+- `Sources/SwiftCommonsSpeech`: a separate library product for on-device speech (depends on
+  `SwiftCommons`). `Recognition` (`SpeechRecognitionSession` over `SpeechAnalyzer`/`AVAudioEngine`,
+  `SpeechTranscript`, `SpeechModelAssets`), `Synthesis` (`SpeechSynthesisSession` over
+  `AVSpeechSynthesizer`, `SpeechVoice`), `Alignment` (`TranscriptAlignment` for read-aloud
+  grading), and `Permissions`. Live APIs are `@available(iOS 26, macOS 26, *)`; the rest follow the
+  package minimums. Keep hardware-bound code in the thin live adapters
+  (`SpeechRecognitionSession`, `SpeechModelAssets`, `SpeechRecognitionPermissions`), which CI
+  excludes from the coverage gate because they need a microphone, TCC prompts, or model downloads.
+  Everything else (mapping, metering, tap processing, voice ranking, event routing, alignment)
+  must stay unit-tested.
+- `Tests/SwiftCommonsTests`: Swift Testing coverage mirroring the `Sources` structure (covers
+  `SwiftCommons`, `SwiftCommonsTestSupport`, and `SwiftCommonsSpeech` under `Speech/`). Keep a
+  single test target: the CI coverage gate reads one test bundle.
 
 ## Key APIs and Patterns
 
