@@ -22,11 +22,14 @@ dependencies: [
 ]
 ```
 
-SwiftCommons ships two products:
+SwiftCommons ships three products:
 
 - **`SwiftCommons`** — the main library. Add this to any target that uses the APIs below.
 - **`SwiftCommonsTestSupport`** — test-only helpers (a TestCommons-backed fake clock, `LoadingState` assertions,
   in-memory SwiftData context, sync test fixtures). Add this to your test targets only.
+- **`SwiftCommonsSpeech`** — on-device speech-to-text, text-to-speech, and read-aloud transcript
+  alignment (see [Speech](#speech)). A separate product so apps that don't use speech don't link
+  `Speech` or `AVFAudio`. Live recognition needs iOS 26 / macOS 26.
 
 ```swift
 .target(name: "MyApp", dependencies: [
@@ -226,6 +229,47 @@ let result = try await lock.withLock { try await refreshToken() }
 let semaphore = AsyncSemaphore(value: 3) // cap concurrent requests
 let response = try await semaphore.withPermit { try await urlSession.data(from: url) }
 ```
+
+### Speech
+
+`SwiftCommonsSpeech` wraps Apple's on-device `SpeechAnalyzer` and `AVSpeechSynthesizer` behind
+small protocols (`SpeechRecognizing`, `SpeechSynthesizing`) so features can be tested with fakes.
+
+```swift
+import SwiftCommonsSpeech
+
+// 1. Permissions (Info.plist needs NSMicrophoneUsageDescription and
+//    NSSpeechRecognitionUsageDescription) and the locale's model.
+guard await SpeechRecognitionPermissions.requestAll() else { return }
+let locale = Locale(identifier: "en_US")
+if await SpeechModelAssets.status(for: locale) != .installed {
+    try await SpeechModelAssets.install(for: locale) { progress in print(progress) }
+}
+
+// 2. Live transcript; on iOS, activate a .playAndRecord AVAudioSession first.
+let recognizer = SpeechRecognitionSession()
+let events = try await recognizer.start(
+    SpeechRecognitionConfiguration(locale: locale, autoStopAfterSilence: .seconds(1.5)))
+var transcript = SpeechTranscript()
+for try await event in events {
+    if case .transcript(let latest) = event { transcript = latest }
+}
+
+// 3. Speak a reply with the best installed voice.
+let speech = SpeechSynthesisSession()
+for await _ in speech.speak(SpeechSynthesisRequest(text: "Nice work!", languageCode: "en-US")) {}
+
+// 4. Grade a read-aloud attempt word by word.
+let alignment = TranscriptAlignment.align(
+    reference: "The quick brown fox", heard: transcript.words.map(\.transcriptToken))
+alignment.tokens   // .match / .lowConfidence / .substitution / .omission / .insertion
+alignment.score    // 0...1
+```
+
+Alignment compares what the recognizer *understood*: it catches missed, extra, and misheard
+words, but a recognizer often repairs mildly mispronounced words, so it isn't phoneme-level
+pronunciation scoring. Leave `contextualStrings` empty when grading, or the recognizer is biased
+toward the expected sentence.
 
 ### Sync (SwiftData)
 

@@ -59,6 +59,10 @@ jobs:
       - name: Coverage report and gate
         env:
           MIN_COVERAGE: "90"
+          # The live speech adapters need a microphone, TCC permission prompts, or an on-device
+          # model download, none of which a headless runner has. Their pure logic is factored
+          # out and covered; only these thin hardware-bound files are excluded.
+          IGNORE_REGEX: '.build|Tests|SwiftCommonsSpeech/(Recognition/SpeechRecognitionSession|Recognition/SpeechModelAssets|Permissions/SpeechRecognitionPermissions)\.swift'
         run: |
           bin_path="$(swift build --enable-all-traits --show-bin-path)"
           profdata="${bin_path}/codecov/default.profdata"
@@ -67,12 +71,12 @@ jobs:
 
           report="$(xcrun llvm-cov report "${binary}" \
             -instr-profile "${profdata}" \
-            -ignore-filename-regex='.build|Tests')"
+            -ignore-filename-regex="${IGNORE_REGEX}")"
           echo "${report}"
 
           coverage="$(xcrun llvm-cov export "${binary}" \
             -instr-profile "${profdata}" \
-            -ignore-filename-regex='.build|Tests' \
+            -ignore-filename-regex="${IGNORE_REGEX}" \
             -summary-only \
             | python3 -c 'import json,sys; print("%.2f" % json.load(sys.stdin)["data"][0]["totals"]["lines"]["percent"])')"
 
