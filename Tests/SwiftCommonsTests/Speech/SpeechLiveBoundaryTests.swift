@@ -33,10 +33,11 @@ struct SpeechLiveBoundaryTests {
     }
 
     @Test(.enabled(if: SpeechTestAvailability.hasSpeechAnalyzer))
-    func assetStatusForASupportedLocaleIsNeverUnsupported() async throws {
+    func assetStatusForSupportedLocalesIsNeverUnsupported() async {
         guard #available(macOS 26, iOS 26, macCatalyst 26, *) else { return }
         let supported = await SpeechModelAssets.supportedLocales()
-        let locale = try #require(supported.first)
-        #expect(await SpeechModelAssets.status(for: locale) != .unsupported)
+        for locale in supported {
+            #expect(await SpeechModelAssets.status(for: locale) != .unsupported)
+        }
     }
 }
