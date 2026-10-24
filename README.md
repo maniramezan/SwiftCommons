@@ -87,6 +87,12 @@ include `.defaults`:
   descriptions) for storing or comparing errors as values.
 - **State** — a generic `LoadingState` machine (`idle`/`loading`/`loaded`/`failed`) with a
   user-safe `LoadingError`, including a `LoadingState.load { ... }` helper for wrapping async work.
+  `LoadingErrorKind` and `LoadingErrorClassifiable` distinguish offline, timeout, and other failures
+  without displaying internal error details; apps can map `LoadingError.kind` to localized copy.
+- **App versions** — `AppVersion(string:)` parses and compares numeric marketing versions,
+  normalizing missing components to zero and ignoring prerelease/build suffixes.
+- **Month grids** — `CalendarArithmetic.gridDates(in:)` returns day starts padded to full weeks,
+  respecting the calendar's first weekday, time zone, leap months, and era segments.
 - **Configuration** — `ConfigValue`, a lenient `bool`/`string`/`int`/`double` coercion type, with
   loaders for `ProcessInfo.environment` and decoded property lists, plus a `ConfigValueType` tag and
   `ConfigValue(string:valueType:)` for decoding a textual value whose type is known separately.
@@ -97,6 +103,9 @@ include `.defaults`:
   can substitute a fake clock in tests.
 - **Retry backoff** — `RetryBackoff` (`.constant`, `.exponential` with cap and jitter) and a
   `shouldRetry` predicate for `withRetry(attempts:backoff:clock:shouldRetry:operation:)`.
+- **Timeouts** — `withTimeout(_:clock:operation:)` races async work against an injectable clock,
+  cancels the losing task, and throws `TimeoutError` when time expires. Operations must cooperate
+  with cancellation for prompt completion.
 - **CSV** — lightweight CSV parsing/serialization (behind the `CSV` package trait).
 - **Call coalescing** — `SingleFlight<Key, Value>`, which shares one in-flight async call among
   concurrent callers for the same key.
@@ -229,6 +238,32 @@ let result = try await lock.withLock { try await refreshToken() }
 let semaphore = AsyncSemaphore(value: 3) // cap concurrent requests
 let response = try await semaphore.withPermit { try await urlSession.data(from: url) }
 ```
+
+### Timeouts, versions, and month grids
+
+```swift
+let items = try await withTimeout(.seconds(10)) {
+    try await fetchItems()
+}
+
+let installedVersion = AppVersion(string: "2.4")
+let recommendedVersion = AppVersion(string: "2.5.0-preview")
+
+let arithmetic = CalendarArithmetic(calendar: Calendar(identifier: .gregorian))
+let dates = arithmetic.gridDates(in: MonthIdentifier(month: 2, year: 2028))
+```
+
+`AppVersion` compares numeric app versions; it does not implement semantic-version prerelease
+precedence. `gridDates(in:)` returns `nil` for an invalid or mismatched month and includes padding
+dates outside the requested month. Use `arithmetic.month(containing:)` to identify that padding.
+
+`withTimeout` waits for both child tasks to finish cleanup. An operation that ignores cancellation
+can keep it suspended beyond the timeout. Parent cancellation throws `CancellationError`.
+
+`LoadingError(from:)` recognizes errors conforming to `LoadingErrorClassifiable`, native offline
+and timeout URL errors, and `TimeoutError`. Other errors retain the generic safe message. For
+localized presentation, map `LoadingError.kind` to app-owned strings; explicit messages remain
+available through `LoadingError(message:isRetryable:requiresSignIn:kind:)`.
 
 ### Speech
 
