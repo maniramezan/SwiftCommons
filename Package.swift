@@ -12,6 +12,9 @@ let package = Package(
         .library(
             name: "SwiftCommonsTestSupport",
             targets: ["SwiftCommonsTestSupport"]),
+        .library(
+            name: "SwiftCommonsSpeech",
+            targets: ["SwiftCommonsSpeech"]),
     ],
     traits: [
         .trait(
@@ -35,9 +38,12 @@ let package = Package(
                 "SwiftCommons",
                 .product(name: "TestCommons", package: "SwiftTestCommons"),
             ]),
+        .target(
+            name: "SwiftCommonsSpeech",
+            dependencies: ["SwiftCommons"]),
         .testTarget(
             name: "SwiftCommonsTests",
-            dependencies: ["SwiftCommons", "SwiftCommonsTestSupport"],
+            dependencies: ["SwiftCommons", "SwiftCommonsTestSupport", "SwiftCommonsSpeech"],
             plugins: [
                 .plugin(name: "SwiftFormatLintPlugin")
             ]),
