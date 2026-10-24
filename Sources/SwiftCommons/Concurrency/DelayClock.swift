@@ -3,14 +3,15 @@ import Foundation
 /// A minimal, dependency-injectable clock abstraction for suspending a fixed
 /// duration.
 ///
-/// `withRetry(attempts:delay:clock:operation:)` and `Debouncer` accept a
+/// `withRetry(attempts:delay:clock:operation:)`, `withTimeout(_:clock:operation:)`, and `Debouncer` accept a
 /// clock so tests can substitute a fake (see `ManualClock` in the
 /// `SwiftCommonsTestSupport` module) instead of waiting on real time.
-/// Production call sites can ignore this entirely — both APIs default to
-/// ``LiveClock``, which behaves exactly as it did before the clock parameter
-/// was introduced.
+/// Production call sites can use the default ``LiveClock``.
 public protocol DelayClock: Sendable {
     /// Suspends the calling task for approximately `duration`.
+    ///
+    /// Implementations should throw `CancellationError` when cancelled so callers
+    /// can promptly clean up pending delays.
     /// - Parameter duration: How long to suspend for.
     func sleep(for duration: Duration) async throws
 }
