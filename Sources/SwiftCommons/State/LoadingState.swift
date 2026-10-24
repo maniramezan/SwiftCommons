@@ -38,8 +38,8 @@ public enum LoadingState<Value: Equatable & Sendable>: Equatable, Sendable {
     ///     state = await .load { try await api.fetchItems() }
     ///
     /// Thrown errors are converted with ``LoadingError/init(from:)``, which
-    /// discards internal error details in favor of a generic, user-safe
-    /// message. Call sites that need error-type-specific messaging should
+    /// discards internal error details in favor of a safe message based on the
+    /// error's loading category. Call sites that need custom messaging should
     /// catch the error themselves and construct a ``LoadingError`` directly.
     ///
     /// Cancellation is not a failure: if the surrounding task is cancelled, or the
@@ -82,23 +82,63 @@ public struct LoadingError: Error, Equatable, Sendable {
     ///   - requiresSignIn: Whether resolving the failure requires signing in.
     ///     Defaults to `false`.
     public init(message: String, isRetryable: Bool = true, requiresSignIn: Bool = false) {
+        self.init(
+            message: message, isRetryable: isRetryable, requiresSignIn: requiresSignIn,
+            kind: .other)
+    }
+
+    /// Creates a failure with an explicit message and a safe category.
+    ///
+    /// - Parameters:
+    ///   - message: A message safe to show to users, such as app-localized copy.
+    ///   - isRetryable: Whether the operation can be retried. Defaults to `true`.
+    ///   - requiresSignIn: Whether resolving the failure requires signing in. Defaults to `false`.
+    ///   - kind: The safe failure category to preserve for presentation.
+    public init(
+        message: String, isRetryable: Bool = true, requiresSignIn: Bool = false,
+        kind: LoadingErrorKind
+    ) {
         self.message = message
         self.isRetryable = isRetryable
         self.requiresSignIn = requiresSignIn
+        self.kind = kind
     }
 
-    /// Creates a failure from an arbitrary error using a generic, safe message.
+    /// Creates a failure from an arbitrary error using a category-specific, safe message.
     ///
     /// Internal error details (e.g. "Unauthorized access", stack traces) are
-    /// never exposed to users. Callers that need error-type-specific messaging
-    /// should use ``init(message:isRetryable:requiresSignIn:)`` directly.
+    /// never exposed to users. ``LoadingErrorClassifiable`` supplies the category
+    /// when implemented; otherwise `URLError.notConnectedToInternet` and
+    /// `URLError.timedOut` are recognized, and other failures use `.other`.
+    /// Callers can map ``kind`` to localized copy or pass their own message to
+    /// ``init(message:isRetryable:requiresSignIn:kind:)``.
     public init(from error: Error) {
-        message = "Something went wrong. Please try again."
+        if let classified = error as? any LoadingErrorClassifiable {
+            kind = classified.loadingErrorKind
+        } else if let urlError = error as? URLError {
+            kind =
+                switch urlError.code {
+                case .notConnectedToInternet: .offline
+                case .timedOut: .timedOut
+                default: .other
+                }
+        } else {
+            kind = .other
+        }
+        message =
+            switch kind {
+            case .offline: "Unable to connect. Please check your internet connection and try again."
+            case .timedOut: "The request timed out. Please try again."
+            case .other: "Something went wrong. Please try again."
+            }
         isRetryable = true
         requiresSignIn = false
     }
 
     // MARK: Public
+
+    /// The safe category of the failure, which apps can map to localized presentation.
+    public let kind: LoadingErrorKind
 
     /// Whether `error` represents cancellation rather than a failure:
     /// `CancellationError` or `URLError.cancelled`.

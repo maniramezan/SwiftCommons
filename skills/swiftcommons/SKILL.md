@@ -26,6 +26,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Encode a boolean flag | `String(flag: true)` → `"1"` |
 | Remote/env/plist config | `ConfigValue.environment()`, `ConfigValue.propertyList(_:)`, `.boolValue` / `.intValue` / `.doubleValue` |
 | App version label | `Bundle.main.versionAndBuildNumber` → `"2.3.1 (142)"` |
+| Compare app versions | `AppVersion(string:)` → `Comparable` numeric version; missing components become zero and suffixes are ignored |
 | Stable ID from a string | `UUID.deterministicMD5(from:)` (not for security) |
 | `Duration` → `TimeInterval` | `duration.timeInterval` |
 | Fixed date pattern | `DateFormatter.formatter(.yyyyMMdd)` and the other `FormatType` cases |
@@ -35,13 +36,16 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Any other cached `Formatter` | `FormatterCache.formatter(for: key) { makeFormatter() }` |
 | `m:ss` / `h:mm:ss` | `DurationFormatter.format(seconds:)` |
 | Calendar math | `calendar.startOfMonth(for:)`, `numberOfDays(in:year:)`, `dates(from:through:)`; era/leap-month-safe months via `CalendarArithmetic` + `MonthIdentifier` |
+| Month grid dates | `CalendarArithmetic(calendar: calendar).gridDates(in: month)` → `[Date]?`, padded to complete weeks using `firstWeekday` |
 | Screen loading state | `LoadingState<Value>` with `state = await .load { try await fetch() }` |
+| Safe loading failure categories | `LoadingError.kind` (`.offline`, `.timedOut`, `.other`); domain errors can conform to `LoadingErrorClassifiable` |
 | Serialize async work across awaits | `try await lock.withLock { … }` (`AsyncLock`) |
 | Deduplicate concurrent identical requests | `try await singleFlight.value(for: key) { … }` (`SingleFlight<Key, Value>`) |
 | Cap concurrency | `AsyncSemaphore(value: n).withPermit { … }` |
 | Fan one source out to many `AsyncStream`s | `AsyncBroadcaster<T>()` → `makeStream()` / `yield(_:)` / `finish()`; `replaysLatest: true` for current-value streams |
 | Debounce | `await Debouncer(delay: .milliseconds(300)).run { … }` |
 | Retry | `try await withRetry(attempts: 3, delay: .seconds(1)) { … }` |
+| Time out async work | `try await withTimeout(.seconds(10)) { … }`; inject `clock:` for tests |
 | Retry with exponential backoff / only some errors | `withRetry(attempts:backoff: .exponential(baseDelay:maxDelay:jitter:), shouldRetry:operation:)` |
 | SwiftData container | `try ModelContainer.make(for: A.self, B.self, inMemory: isPreview)` |
 | Measure hot paths | `SignpostRecorder(subsystem:category:).measure("name") { … }` |
@@ -80,8 +84,18 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 - **`Debouncer.run` must be awaited.** From synchronous code, wrapping it in `Task { await … }`
   can reorder calls.
 - **`LoadingState.load` maps cancellation to `.idle`, not `.failed`.** `LoadingError(from:)`
-  always shows a generic message, so construct `LoadingError(message:isRetryable:requiresSignIn:)`
-  yourself when the user needs a specific message.
+  uses safe offline/timeout messages for `LoadingErrorClassifiable`, native offline/timeout
+  URL errors, and `TimeoutError`; other failures use the generic message. Map `.kind` to
+  app-localized strings or construct `LoadingError(message:isRetryable:requiresSignIn:kind:)`.
+- **Timeout cancellation is cooperative.** `withTimeout` cancels the losing child and waits
+  for cleanup. An operation that ignores cancellation can exceed the duration. Parent
+  cancellation throws `CancellationError`; zero/negative durations throw `TimeoutError`
+  without starting the operation.
+- **`AppVersion` is a marketing-version comparison.** `2.4`, `2.4.0-preview`, and `2.4.0+42`
+  compare equal. Do not use it when semantic-version prerelease precedence matters.
+- **Month grids contain padding.** `gridDates(in:)` returns `nil` for invalid/mismatched
+  identities. Use `arithmetic.month(containing: date) == month` to distinguish actual month
+  days from padding, including leap months and months split across eras.
 - **`URL` conforms to `ExpressibleByStringLiteral`.** Only use literals for known-good
   constants; an invalid literal is a runtime `preconditionFailure`.
 - **CSV is opt-in.** Enable the `CSV` package trait to get `CSV.parseRows` /

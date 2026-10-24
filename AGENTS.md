@@ -79,6 +79,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Optional.ifNil(_:)` for defaulting optionals.
 - `String.trimmed`, `.isBlank`, `.nilIfBlank` for normalizing text input.
 - `Bundle.appVersion`, `.buildNumber`, `.versionAndBuildNumber` for app version display.
+- `AppVersion(string:)` compares numeric marketing versions, defaults missing components to zero,
+  and ignores suffixes; it does not implement semantic-version prerelease precedence.
 - `UUID` extensions for byte access and deterministic generation.
 - `Duration.timeInterval` bridges `Duration` to `TimeInterval`.
 - `DecodingError.debugSummary` renders the failure kind, key/type, and a readable coding path
@@ -94,6 +96,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   per-thread caching pattern (e.g. "1 hour ago").
 - `Calendar` extensions provide date math (start of week/month, month symbols, adding months/years,
   inclusive date ranges via `dates(from:through:)`).
+- `CalendarArithmetic.gridDates(in:)` pads a valid month identity to complete weeks of day starts,
+  respecting `firstWeekday` and era/leap-month identity; padding can lie outside that identity.
 - `Language` and `Country` enums are curated ISO code subsets (not exhaustive).
 - `Locale.identifier(language:country:)` plus `Locale.Identifiers` convenience constants.
 - Logging helpers built on OSLog with public/private convenience methods and context helpers.
@@ -115,7 +119,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   which `ErrorLogSummary` uses, so a wrapped error is logged as the error it wraps.
 - `LoadingState<Value>` models idle/loading/loaded/failed screen state; `LoadingState.load { ... }`
   runs a throwing async operation and maps the outcome; `LoadingError(from:)` redacts internal
-  error details behind a generic, user-safe message.
+  error details behind safe offline/timeout messages or a generic fallback. `LoadingErrorClassifiable`
+  supplies `LoadingErrorKind`; apps can map `LoadingError.kind` to localized copy.
 - `ConfigValue` is a `bool`/`string`/`int`/`double` enum with lenient coercion accessors
   (`boolValue`, `stringValue`, `intValue`, `doubleValue`); `ConfigValue.environment(_:)` loads
   `[String: ConfigValue]` from `ProcessInfo.environment` (or an injected dictionary) for tests;
@@ -132,11 +137,14 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   synchronously on termination, so an immediately cancelled consumer can't leak.
 - `Debouncer` (actor) coalesces rapid repeated calls into one action after a quiet period.
 - `withRetry(attempts:delay:clock:operation:)` retries a throwing async operation with a fixed delay.
+- `withTimeout(_:clock:operation:)` races work against a delay, cancels the loser, and waits for
+  cleanup. Cancellation is cooperative, so the duration is not a hard deadline. `TimeoutError`
+  classifies as `.timedOut`; parent cancellation remains `CancellationError`.
 - `withRetry(attempts:backoff:clock:shouldRetry:operation:)` takes a `RetryBackoff` (`.constant`,
   or `.exponential(baseDelay:multiplier:maxDelay:jitter:jitterSource:)`, capped before jitter)
   and a `shouldRetry` predicate; the fixed-delay overload is built on `.constant`.
-- `DelayClock` is the injectable clock protocol behind `withRetry` and `Debouncer`'s delays
-  (default: `LiveClock`, backed by `Task.sleep(for:)`). Both APIs default to the
+- `DelayClock` is the injectable clock protocol behind `withRetry`, `withTimeout`, and `Debouncer`'s delays
+  (default: `LiveClock`, backed by `Task.sleep(for:)`). These APIs default to the
   real clock, so existing call sites are unaffected; tests can inject
   `ManualClock` (in `SwiftCommonsTestSupport`) to avoid real-time waits.
 - `SingleFlight<Key, Value>` (actor) coalesces concurrent `value(for:operation:)` calls per key into

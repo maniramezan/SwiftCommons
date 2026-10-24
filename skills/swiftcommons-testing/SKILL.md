@@ -17,7 +17,7 @@ into app targets.
 
 ## Time: `ManualClock`
 
-`withRetry` and `Debouncer` accept a `clock:`. In tests, inject the fake clock so no test sleeps
+`withRetry`, `withTimeout`, and `Debouncer` accept a `clock:`. In tests, inject the fake clock so no test sleeps
 in real time.
 
 ```swift
@@ -38,6 +38,11 @@ This bounded wait fails clearly if the work never reaches its sleep. In retry te
 an additional sleep before advancing each retry delay. Await child tasks before inspecting
 results. Production code should keep the default clock parameter; only tests pass one in.
 
+For `withTimeout`, use separate manual clocks for the timeout and the operation. Observe a
+sleep on each before advancing the desired winner. Assert `TimeoutError` for expiration,
+`CancellationError` for parent cancellation, and zero pending waiters after awaiting the task.
+Always cancel any stored test task in `defer` so a failed prerequisite does not leave it running.
+
 The public `ManualClock` adapter uses TestCommons’ clock internally and keeps the `DelayClock` API.
 ManualClock sleeps throw CancellationError and remove their waiter when the sleeping task is cancelled.
 Cancelled sleeps do not require advancing the clock to finish. `sleepCount` counts
@@ -54,6 +59,9 @@ let error = expectFailed(state)                                  // returns Load
 ```
 
 A cancelled `LoadingState.load` returns `.idle`. Assert `== .idle` for cancellation paths.
+Assert `error.kind` when testing offline or timeout presentation; custom test errors can conform
+to `LoadingErrorClassifiable` without importing a networking framework. Unknown errors retain
+the generic safe message, and `TimeoutError` classifies as `.timedOut`.
 
 ## SwiftData
 
