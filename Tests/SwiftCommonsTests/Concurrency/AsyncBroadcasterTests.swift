@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 import Testing
 
 @testable import SwiftCommons
@@ -178,6 +179,43 @@ struct AsyncBroadcasterTests {
 
         for stream in streams {
             #expect(await collect(stream).sorted() == Array(0..<100))
+        }
+    }
+
+    @Test
+    func cancellingAConsumerWhileAValueIsYieldedDoesNotDeadlock() async throws {
+        // Cancelling a consumer runs its stream's `onTermination` while the runtime holds the
+        // consumer task's status lock, and yielding to a waiting consumer takes that same lock.
+        // Each iteration parks a consumer in `next()`, then yields from another thread while
+        // cancelling it. The race runs in an unstructured task so a deadlock fails this test at the
+        // deadline instead of hanging the whole suite.
+        let progress = Mutex(0)
+        let iterations = 2_000
+        let race = Task.detached {
+            for value in 0..<iterations {
+                let broadcaster = AsyncBroadcaster<Int>()
+                let stream = broadcaster.makeStream()
+                let consumer = Task {
+                    var iterator = stream.makeAsyncIterator()
+                    _ = await iterator.next()
+                }
+                await Task.yield()
+                DispatchQueue.global().async { broadcaster.yield(value) }
+                consumer.cancel()
+                await consumer.value
+                progress.withLock { $0 += 1 }
+            }
+        }
+
+        let deadline = ContinuousClock.now.advanced(by: .seconds(60))
+        while progress.withLock({ $0 }) < iterations, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        let completed = progress.withLock { $0 }
+        #expect(
+            completed == iterations, "Deadlocked after \(completed) of \(iterations) iterations")
+        if completed == iterations {
+            await race.value
         }
     }
 
