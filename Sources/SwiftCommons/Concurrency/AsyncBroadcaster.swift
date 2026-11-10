@@ -34,6 +34,12 @@ public final class AsyncBroadcaster<Element: Sendable>: Sendable {
     private let replaysLatest: Bool
     private let bufferingPolicy: AsyncStream<Element>.Continuation.BufferingPolicy
     private let state: Mutex<State>
+    /// Serializes ``yield(_:)`` and ``finish()`` so every stream sees values in yield order.
+    ///
+    /// Streams are yielded to and finished while holding only this lock, never `state`. Resuming a
+    /// waiting consumer takes its task's status lock, and cancelling a consumer holds that lock
+    /// while its stream's `onTermination` takes `state`, so delivering under `state` deadlocks.
+    private let delivery = Mutex(())
 
     /// Creates a broadcaster.
     ///
@@ -118,12 +124,16 @@ public final class AsyncBroadcaster<Element: Sendable>: Sendable {
     /// - Parameter value: The value to broadcast.
     public func yield(_ value: Element) {
         let replaysLatest = replaysLatest
-        state.withLock { state in
-            guard !state.isFinished else { return }
-            if replaysLatest {
-                state.latest = value
+        delivery.withLock { _ in
+            let continuations = state.withLock { state -> [AsyncStream<Element>.Continuation] in
+                guard !state.isFinished else { return [] }
+                if replaysLatest {
+                    state.latest = value
+                }
+                return Array(state.continuations.values)
             }
-            for continuation in state.continuations.values {
+            // A stream whose consumer stopped since the snapshot ignores the value.
+            for continuation in continuations {
                 continuation.yield(value)
             }
         }
@@ -134,18 +144,20 @@ public final class AsyncBroadcaster<Element: Sendable>: Sendable {
     /// Consumers receive any values already buffered before their stream ends. Streams created
     /// afterwards finish immediately. Calling `finish()` more than once has no further effect.
     public func finish() {
-        let continuations = state.withLock { state -> [AsyncStream<Element>.Continuation] in
-            guard !state.isFinished else { return [] }
-            state.isFinished = true
-            state.latest = nil
-            let continuations = Array(state.continuations.values)
-            state.continuations.removeAll()
-            return continuations
-        }
-        // Finish outside the lock: `finish()` runs each stream's `onTermination` synchronously,
-        // which takes the lock again.
-        for continuation in continuations {
-            continuation.finish()
+        delivery.withLock { _ in
+            let continuations = state.withLock { state -> [AsyncStream<Element>.Continuation] in
+                guard !state.isFinished else { return [] }
+                state.isFinished = true
+                state.latest = nil
+                let continuations = Array(state.continuations.values)
+                state.continuations.removeAll()
+                return continuations
+            }
+            // Finish outside `state`: `finish()` runs each stream's `onTermination` synchronously,
+            // which takes `state` again.
+            for continuation in continuations {
+                continuation.finish()
+            }
         }
     }
 
