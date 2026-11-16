@@ -288,11 +288,21 @@ extension SyncEngine {
         into activeKeys: inout Set<String>,
         context: ModelContext
     ) throws -> Bool {
+        let batch = try adapter.findExistingBatch?(response.serverChanges, context)
+        var seenKeys = Set<String>()
         for change in response.serverChanges {
-            if !adapter.isChangeDeleted(change), let key = adapter.changeKey(change) {
+            let key = adapter.changeKey(change)
+            if !adapter.isChangeDeleted(change), let key {
                 activeKeys.insert(key)
             }
-            let existing = try adapter.findExisting(change, context)
+            let existing: Model?
+            // A key repeated on one page may refer to a row the earlier change just inserted,
+            // which the batch snapshot can't contain, so look that one up directly.
+            if let batch, let key, seenKeys.insert(key).inserted {
+                existing = batch[key]
+            } else {
+                existing = try adapter.findExisting(change, context)
+            }
             // Pending guard: never clobber a row that still has un-pushed local changes.
             if let existing, existing.syncState != .synced { continue }
             adapter.upsertFromChange(change, existing, context)
