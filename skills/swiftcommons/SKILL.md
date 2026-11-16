@@ -27,7 +27,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Remote/env/plist config | `ConfigValue.environment()`, `ConfigValue.propertyList(_:)`, `.boolValue` / `.intValue` / `.doubleValue` |
 | App version label | `Bundle.main.versionAndBuildNumber` → `"2.3.1 (142)"` |
 | Compare app versions | `AppVersion(string:)` → `Comparable` numeric version; missing components become zero and suffixes are ignored |
-| Stable ID from a string | `UUID.deterministicMD5(from:)` (not for security) |
+| Stable ID from a string | `UUID(namespace: myNamespace, name: string)` for a standards-compliant name-based (v5) UUID; `UUID.deterministicMD5(from:)` only to reproduce existing stored ids (it is not a valid v3 UUID; not for security) |
 | `Duration` → `TimeInterval` | `duration.timeInterval` |
 | Fixed date pattern | `DateFormatter.formatter(.yyyyMMdd)` and the other `FormatType` cases |
 | Localized date | `DateFormatter.formatter(template: "yMMMd", calendar: .current)` or `formatter(dateStyle:timeStyle:)` |

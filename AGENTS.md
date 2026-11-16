@@ -87,7 +87,10 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Bundle.appVersion`, `.buildNumber`, `.versionAndBuildNumber` for app version display.
 - `AppVersion(string:)` compares numeric marketing versions, defaults missing components to zero,
   and ignores suffixes; it does not implement semantic-version prerelease precedence.
-- `UUID` extensions for byte access and deterministic generation.
+- `UUID` extensions for byte access and deterministic generation. `UUID(namespace:name:)` is the
+  RFC 4122 name-based (v5, SHA-1) UUID, with `dnsNamespace`/`urlNamespace`/`oidNamespace`/`x500Namespace`.
+  `UUID.deterministicMD5(from:)` is *not* a standard v3 UUID (no namespace, no version/variant bits)
+  and its output must stay unchanged because stored ids depend on it.
 - `Duration.timeInterval` bridges `Duration` to `TimeInterval`.
 - `DecodingError.debugSummary` renders the failure kind, key/type, and a readable coding path
   (`typeMismatch Int at items[2].user.id`, `<root>` for an empty path) without decoded values;
