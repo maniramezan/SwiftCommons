@@ -20,11 +20,13 @@ import Foundation
 /// Each call to ``run(action:)`` cancels any pending action scheduled by a
 /// previous call, then schedules the new action to run after `delay`. If the
 /// debouncer is deallocated or a new call arrives first, a pending action
-/// never runs.
+/// never runs. Call ``flush()`` to run the pending action immediately instead, for example
+/// when a screen closes with an edit still waiting out its quiet period.
 public actor Debouncer {
     private let delay: Duration
     private let clock: any DelayClock
     private var task: Task<Void, Never>?
+    private var pendingAction: (@Sendable () async -> Void)?
 
     /// Creates a debouncer with the given quiet-period delay.
     /// - Parameters:
@@ -43,17 +45,39 @@ public actor Debouncer {
     /// - Parameter action: The work to perform once the quiet period elapses.
     public func run(action: @escaping @Sendable () async -> Void) {
         task?.cancel()
+        pendingAction = action
         let delay = delay
         let clock = clock
-        task = Task {
+        // Weak, so a dropped debouncer still deinitializes (and cancels its timer).
+        task = Task { [weak self] in
             do {
                 try await clock.sleep(for: delay)
             } catch {
                 return
             }
-            guard !Task.isCancelled else { return }
-            await action()
+            await self?.fire()
         }
+    }
+
+    private func fire() async {
+        guard !Task.isCancelled, let action = pendingAction else { return }
+        pendingAction = nil
+        await action()
+    }
+
+    /// Runs the pending action now, without waiting out the rest of the quiet period.
+    ///
+    /// Does nothing when no action is pending. The action runs at most once: the scheduled run
+    /// is cancelled, and a later call to ``run(action:)`` starts a fresh quiet period.
+    /// - Returns: `true` if a pending action was run, `false` if there was none.
+    @discardableResult
+    public func flush() async -> Bool {
+        guard let action = pendingAction else { return false }
+        task?.cancel()
+        task = nil
+        pendingAction = nil
+        await action()
+        return true
     }
 
     deinit {
@@ -64,5 +88,6 @@ public actor Debouncer {
     public func cancel() {
         task?.cancel()
         task = nil
+        pendingAction = nil
     }
 }
