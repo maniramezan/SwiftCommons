@@ -27,6 +27,20 @@ public enum DurationFormatter {
         }
     }
 
+    /// Formats a `Duration` into a readable duration string.
+    ///
+    ///     DurationFormatter.format(.seconds(225))        // "3:45"
+    ///     DurationFormatter.format(.milliseconds(3_750_000)) // "1:02:30"
+    ///
+    /// Fractional seconds are truncated toward zero, so `.milliseconds(1_999)` renders as
+    /// `0:01`, and the sign and layout follow ``format(seconds:)``.
+    ///
+    /// - Parameter duration: The duration to format.
+    /// - Returns: The formatted duration string.
+    public static func format(_ duration: Duration) -> String {
+        format(seconds: Int(duration.components.seconds))
+    }
+
     /// Zero-pads a value in `0...59` to two digits without going through `String(format:)`.
     private static func twoDigits(_ value: UInt) -> String {
         value < 10 ? "0\(value)" : "\(value)"

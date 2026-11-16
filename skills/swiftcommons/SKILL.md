@@ -35,7 +35,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Numbers | `NumberFormatter.formatCurrency(_:currencyCode:)`, `.formatDecimal`, `.formatPercent`, `.formatOrdinal` |
 | Measurements ("5 km") | `MeasurementFormatter.cached(unitStyle:unitOptions:locale:)` |
 | Any other cached `Formatter` | `FormatterCache.formatter(for: key) { makeFormatter() }` (one instance per key per thread, never evicted: use a small fixed set of keys) |
-| `m:ss` / `h:mm:ss` | `DurationFormatter.format(seconds:)` |
+| `m:ss` / `h:mm:ss` | `DurationFormatter.format(seconds:)` or `DurationFormatter.format(_ duration: Duration)` |
 | Calendar math | `calendar.startOfMonth(for:)`, `numberOfDays(in:year:)`, `dates(from:through:)`; era/leap-month-safe months via `CalendarArithmetic` + `MonthIdentifier` |
 | Month grid dates | `CalendarArithmetic(calendar: calendar).gridDates(in: month)` → `[Date]?`, padded to complete weeks using `firstWeekday` |
 | Screen loading state | `LoadingState<Value>` with `state = await .load { try await fetch() }` |
