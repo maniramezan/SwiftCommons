@@ -83,7 +83,8 @@ include `.defaults`:
 - **Logging** — OSLog `Logger` conveniences for categories, privacy, and context.
 - **Library logging** — `LibraryLogger`, a level-gated OSLog front end whose verbosity a library's
   users control (`setLevel(_:)`), with per-category handles and private URL/error logging.
-- **Formatting** — `DurationFormatter` for compact `m:ss` / `h:mm:ss` durations, and
+- **Formatting** — `DurationFormatter` for compact `m:ss` / `h:mm:ss` durations (from seconds or a
+  `Duration`), and
   `FormatterCache`, the per-thread cache behind the date/number/relative-time formatters, with
   `MeasurementFormatter.cached(...)` as a ready-made use for any other `Formatter`.
 - **Errors** — `AnySendableError`, a `Hashable` snapshot of any error (type, domain, code,
