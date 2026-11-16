@@ -67,7 +67,7 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
 - **Concurrency** — ``AsyncLock`` (FIFO mutex), ``AsyncSemaphore`` (counting
   semaphore), ``AsyncBroadcaster`` (one source to many `AsyncStream`s),
   ``SingleFlight`` (coalesces concurrent identical requests per key),
-  ``Debouncer``, and ``withRetry(attempts:delay:clock:operation:)`` (or
+  ``Debouncer`` (with ``Debouncer/flush()``), ``Throttler``, and ``withRetry(attempts:delay:clock:operation:)`` (or
   ``withRetry(attempts:backoff:clock:shouldRetry:operation:)`` with a ``RetryBackoff`` and a
   retry predicate), all built on the injectable ``DelayClock`` abstraction.
 - **Timeouts** — ``withTimeout(_:clock:operation:)`` races an operation against a clock delay,
@@ -128,6 +128,7 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 - ``AsyncBroadcaster``
 - ``SingleFlight``
 - ``Debouncer``
+- ``Throttler``
 - ``withRetry(attempts:delay:clock:operation:)``
 - ``withRetry(attempts:backoff:clock:shouldRetry:operation:)``
 - ``RetryBackoff``

@@ -47,7 +47,8 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Cap concurrency | `AsyncSemaphore(value: n).withPermit { … }` |
 | Stop waiting for a lock/permit when the task is cancelled | `lock.withLockCancellable { … }`, `semaphore.withPermitCancellable { … }` (throw `CancellationError`); plain `lock()` / `wait()` keep queuing after cancellation |
 | Fan one source out to many `AsyncStream`s | `AsyncBroadcaster<T>()` → `makeStream()` / `yield(_:)` / `finish()`; `replaysLatest: true` for current-value streams |
-| Debounce | `await Debouncer(delay: .milliseconds(300)).run { … }` |
+| Debounce | `await Debouncer(delay: .milliseconds(300)).run { … }`; `await debouncer.flush()` runs the pending action now (e.g. on screen close) |
+| Throttle (at most once per interval, first call immediate) | `await Throttler(interval: .seconds(1)).run { … }` |
 | Retry | `try await withRetry(attempts: 3, delay: .seconds(1)) { … }` |
 | Time out async work | `try await withTimeout(.seconds(10)) { … }`; inject `clock:` for tests |
 | Retry with exponential backoff / only some errors | `withRetry(attempts:backoff:clock:shouldRetry:operation:)` with a `RetryBackoff`: `.constant(_)` or `.exponential(baseDelay:multiplier:maxDelay:jitter:jitterSource:)` (capped before jitter); `shouldRetry` returns `false` to rethrow immediately |
@@ -88,6 +89,8 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
   formatter.
 - **`AsyncLock` isn't reentrant.** Calling `withLock` inside its own critical section deadlocks.
   `unlock()` is actor-isolated, so `defer { lock.unlock() }` doesn't compile; use `withLock`.
+- **`Debouncer` waits for calls to stop; `Throttler` runs at a steady rate.** For a search box use
+  `Debouncer`; for scroll or draft-saving while input continues use `Throttler`.
 - **`Debouncer.run` must be awaited.** From synchronous code, wrapping it in `Task { await … }`
   can reorder calls.
 - **`LoadingState.load` maps cancellation to `.idle`, not `.failed`.** `LoadingError(from:)`
