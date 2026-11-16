@@ -122,7 +122,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   are `StaticString` because the unified logging system records them by pointer. The async
   `measure` and `begin` allocate a fresh signpost ID so overlapping intervals are not paired with
   each other by the default `.exclusive` ID.
-- `DurationFormatter.format(seconds:)` renders compact `m:ss` / `h:mm:ss` durations.
+- `DurationFormatter.format(seconds:)` and `.format(_ duration: Duration)` render compact `m:ss` /
+  `h:mm:ss` durations (the `Duration` overload truncates fractional seconds toward zero).
 - `AnySendableError(error)` snapshots any error as a `Hashable` value (`typeName`, `domain`, `code`,
   `description`, and `localizedDescription` via `LocalizedError`); it doesn't nest, and
   `identity` is its `typeName (domain code)` log identity — the single definition of that format,
