@@ -4,9 +4,9 @@ import SwiftCommons
 #if SwiftData
 import SwiftData
 
-/// Creates an in-memory `ModelContainer` for testing a ``SwiftCommons/SyncEngine``.
+/// Creates an in-memory `ModelContainer` for testing a `SyncEngine`.
 ///
-/// ``SwiftCommons/SyncMetadata`` is added to `types` automatically, since the engine
+/// `SyncMetadata` is added to `types` automatically, since the engine
 /// stores each resource's cursor there and fails at runtime if the schema lacks it:
 ///
 ///     let container = try makeInMemorySyncContainer(for: Item.self)

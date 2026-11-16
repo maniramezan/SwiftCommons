@@ -12,6 +12,13 @@ import OSLog
 /// Entries remain cached for the lifetime of their thread, so prefer a bounded set of
 /// configuration keys rather than keys derived from individual values being formatted.
 ///
+/// **Cost under Swift concurrency:** the cache is per thread, and async code runs on a
+/// cooperative pool of threads. Each distinct key therefore costs one formatter per pool thread
+/// that formats with it, and none are ever evicted. That is bounded by
+/// (distinct keys × pool threads), which is why the key set must stay small. Per-thread storage
+/// is deliberate: formatters are mutable reference types handed to callers, so sharing one
+/// across threads would be unsafe.
+///
 ///     struct NumberKey: Hashable {
 ///         let locale: Locale
 ///     }

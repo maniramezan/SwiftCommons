@@ -31,10 +31,15 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
 - **Strings, Bundle, UUID, Duration** — `String.trimmed`/`.isBlank`/`.nilIfBlank`,
   the ``StringParsable`` protocol (`T(parsing:)` with a lenient `Bool` parser)
   and `String(flag:)`/`.enabledFlag`/`.disabledFlag` boolean-flag helpers,
-  `Bundle.appVersion`/`.buildNumber`/`.versionAndBuildNumber`, `UUID` byte and
-  deterministic-generation helpers, and `Duration.timeInterval`.
+  `String.ensuringStarts(with:)`, suffix trimming (`trimmingSuffix(while:)`,
+  `trimmingSuffix(_:)` for a sequence or regex, and the mutating `trimSuffix` overloads),
+  `Character.isAlphanumeric`, `Bundle.appVersion`/`.buildNumber`/`.versionAndBuildNumber`, `UUID`
+  byte and deterministic-generation helpers, and `Duration.timeInterval`.
+- **Decoding diagnostics** — `DecodingError.debugSummary` renders the failure kind, key or type, and
+  coding path (`keyNotFound 'id' at items[2].user`) without decoded values, for safe logging.
 - **Numbers** — `FixedWidthInteger.digits` and locale-aware
-  `NumberFormatter` helpers (`formatYear`, `formatDay`, `formatCurrency`, `formatDecimal`, `formatPercent`).
+  `NumberFormatter` helpers (`formatYear`, `formatDay`, `formatOrdinal`, `formatCurrency`,
+  `formatDecimal`, `formatPercent`), plus `MeasurementFormatter.cached(unitStyle:unitOptions:locale:)`.
 - **Dates & calendars** — ``MonthIdentifier`` and ``CalendarArithmetic`` preserve
   era and leap-month identity without application date limits. ``CalendarArithmetic/gridDates(in:)``
   pads a month to complete weeks of day starts. These sit alongside `Calendar` date math (start of week/month, month
@@ -46,8 +51,11 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   identifier helpers (`Locale.identifier(language:country:)`,
   `Locale.Identifiers`, and `withNumberingSystemIdentifier(_:)`).
 - **Logging** — OSLog `Logger` conveniences for category creation, privacy
-  levels, and error/context logging, plus ``SignpostRecorder`` for measuring
+  levels, and error/context logging, ``LibraryLogger`` (a level-gated front end whose
+  verbosity a library's users control), plus ``SignpostRecorder`` for measuring
   frame-budgeted work with Instruments' os_signpost instrument.
+- **Errors** — ``AnySendableError`` snapshots any `Error` as a `Hashable` value (type, domain, code,
+  descriptions) for storing or comparing errors.
 - **State & configuration** — a generic ``LoadingState`` machine with
   ``LoadingError`` for async fetches (including ``LoadingState/load(_:)`` to
   wrap a throwing async operation). ``LoadingErrorKind`` and ``LoadingErrorClassifiable``
@@ -58,19 +66,21 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
 - **Concurrency** — ``AsyncLock`` (FIFO mutex), ``AsyncSemaphore`` (counting
   semaphore), ``AsyncBroadcaster`` (one source to many `AsyncStream`s),
   ``SingleFlight`` (coalesces concurrent identical requests per key),
-  ``Debouncer``, and ``withRetry(attempts:delay:clock:operation:)``,
-  all built on the injectable ``DelayClock`` abstraction.
+  ``Debouncer``, and ``withRetry(attempts:delay:clock:operation:)`` (or
+  ``withRetry(attempts:backoff:clock:shouldRetry:operation:)`` with a ``RetryBackoff`` and a
+  retry predicate), all built on the injectable ``DelayClock`` abstraction.
 - **Timeouts** — ``withTimeout(_:clock:operation:)`` races an operation against a clock delay,
   throwing ``TimeoutError`` on expiration and awaiting cancellation cleanup of the losing task.
 - **App versions** — ``AppVersion`` parses and compares numeric marketing versions, defaulting
   omitted components to zero and ignoring prerelease and build suffixes.
-- **CSV** — lightweight CSV parsing/serialization, gated behind the `CSV`
+- **CSV** — lightweight CSV parsing/serialization (``CSV``), gated behind the `CSV`
   package trait.
 - **Persistence** — `ModelContainer.make(for:inMemory:)`, a thin SwiftData
   bootstrap helper for apps, previews, and tests.
   Behind the default `SwiftData` package trait.
 - **Formatting** — ``DurationFormatter`` for compact `m:ss` / `h:mm:ss`
-  durations.
+  durations, and ``FormatterCache``, the thread-local cache behind the date, number, relative-time,
+  and measurement formatter helpers; use it to cache any other `Formatter`.
 - **Sync** — a generic ``SyncEngine`` that drives offline, cross-device sync
   for SwiftData-backed resources through one contract-owning loop; resources
   plug in as ``SyncResourceAdapter`` values. ``SyncEngine``, ``SyncResourceAdapter``, and
@@ -117,6 +127,8 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 - ``SingleFlight``
 - ``Debouncer``
 - ``withRetry(attempts:delay:clock:operation:)``
+- ``withRetry(attempts:backoff:clock:shouldRetry:operation:)``
+- ``RetryBackoff``
 - ``withTimeout(_:clock:operation:)``
 - ``TimeoutError``
 - ``DelayClock``
@@ -134,7 +146,13 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 
 ### Diagnostics
 
+- ``LibraryLogger``
 - ``SignpostRecorder``
+- ``AnySendableError``
+
+### CSV
+
+- ``CSV``
 
 ### Sync
 
