@@ -1,7 +1,5 @@
-#if SwiftData
 import Foundation
 import OSLog
-import SwiftData
 
 /// Drives offline, cross-device sync for locally-stored resources through one
 /// generic loop.
@@ -12,39 +10,45 @@ import SwiftData
 /// identically for every resource. Sync one resource with ``sync(_:)`` or a set
 /// with ``syncAll(_:)``.
 ///
-/// The engine is `@MainActor` and mutates the container's `mainContext`. Passes
-/// are serialized by an ``AsyncLock`` so overlapping triggers can't double-apply;
-/// inject a shared lock when several engine instances must serialize together.
-@MainActor
-public final class SyncEngine {
+/// The engine is not tied to an actor or a persistence framework: every local read
+/// and write goes through the ``SyncStore``'s transactions, which run wherever the
+/// store chooses, and only `Sendable` values cross the network calls between them.
+/// Each page's rows and its ``SyncCheckpoint`` commit in one transaction.
+///
+/// Passes are serialized by an ``AsyncLock`` so overlapping triggers can't
+/// double-apply; inject a shared lock when several engine instances must serialize
+/// together.
+public final class SyncEngine<Store: SyncStore>: Sendable {
 
-    /// Creates a sync engine.
+    /// Creates a sync engine over a store.
     /// - Parameters:
-    ///   - modelContainer: The SwiftData container whose `mainContext` holds the
-    ///     synced rows and ``SyncMetadata``.
+    ///   - store: Where synced rows and checkpoints live.
     ///   - limit: Maximum number of server changes requested per page.
     ///   - lock: Serializes passes. Share one instance across engines that must
     ///     not run concurrently.
     ///   - events: Handler for ``SyncEvent`` lifecycle events.
-    ///   - logger: Logger for failures.
-    public nonisolated init(
-        modelContainer: ModelContainer,
+    ///   - logger: Logger for failures and pass tracing.
+    public init(
+        store: Store,
         limit: Int = 100,
         lock: AsyncLock = AsyncLock(),
         events: @escaping @Sendable (SyncEvent) async -> Void = { _ in },
-        logger: Logger = .swiftCommonsLogger(for: SyncEngine.self)
+        logger: Logger = .swiftCommonsLogger(category: "SyncEngine")
     ) {
         precondition(limit > 0, "limit must be greater than 0")
-        self.modelContainer = modelContainer
+        self.store = store
         self.limit = limit
         self.lock = lock
         eventsTrack = events
         self.logger = logger
     }
 
+    /// The store this engine reads and writes through.
+    public let store: Store
+
     /// Runs one sync pass for a single resource, under the serial lock.
     public func sync<Model, Upsert, Delete, Change>(
-        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change>
+        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change, Store.Context>
     ) async throws {
         try await locked { try await self.drive(adapter) }
     }
@@ -53,14 +57,16 @@ public final class SyncEngine {
     ///
     /// Resources are isolated: a failure in one does not prevent the others from
     /// running. The first error seen is thrown after all resources are attempted.
-    public func syncAll(_ resources: [AnySyncResource]) async throws {
+    public func syncAll(_ resources: [AnySyncResource<Store>]) async throws {
         try await locked {
             var firstError: Error?
             for resource in resources {
                 do {
                     try await resource.run(self)
                 } catch {
-                    self.logger.error("Sync resource failed", error: error)
+                    self.logger.error(
+                        "Sync resource failed", error: error,
+                        context: "resource=\(resource.resourceName)")
                     if firstError == nil { firstError = error }
                 }
             }
@@ -70,7 +76,6 @@ public final class SyncEngine {
 
     // MARK: Internal
 
-    let modelContainer: ModelContainer
     let limit: Int
     let logger: Logger
 
@@ -87,30 +92,6 @@ public final class SyncEngine {
     }
 
     func track(_ event: SyncEvent) async { await eventsTrack(event) }
-
-    func metadata(for resourceName: String, in context: ModelContext) throws -> SyncMetadata {
-        var descriptor = FetchDescriptor<SyncMetadata>(
-            predicate: #Predicate { $0.resourceName == resourceName }
-        )
-        descriptor.fetchLimit = 1
-        if let existing = try context.fetch(descriptor).first { return existing }
-        let metadata = SyncMetadata(resourceName: resourceName)
-        context.insert(metadata)
-        return metadata
-    }
-
-    func update<Change>(
-        _ metadata: SyncMetadata, with response: SyncResponseDTO<Change>, persistCursor: Bool
-    ) {
-        if persistCursor {
-            metadata.cursor = response.cursor
-        }
-        metadata.syncVersion = response.syncVersion
-        if let serverInfo = response.serverInfo {
-            metadata.serverInfo = serverInfo
-        }
-        metadata.lastSyncedAt = Date()
-    }
 
     // MARK: Private
 
@@ -137,59 +118,76 @@ enum SyncPaginationError: Error, Equatable, LocalizedError {
 
 extension SyncEngine {
 
+    /// What the first transaction hands to the push call.
+    private struct Outbound<Upsert: Encodable & Sendable, Delete: Encodable & Sendable>: Sendable {
+        let request: SyncRequestDTO<Upsert, Delete>
+        /// `localUpdatedAt` of each pushed row at send time, keyed by business key.
+        let sentVersions: [String: Date]
+    }
+
+    /// What one committed page hands back to the drain loop.
+    private struct PageOutcome: Sendable {
+        let activeKeys: Set<String>
+        let isFull: Bool
+        /// Acknowledgements that marked a row blocked; reported once the page commits.
+        let blocked: [SyncAppliedDTO]
+    }
+
     /// One sync pass for one resource. Owns the whole contract; resource
     /// specifics come from `adapter`.
     func drive<Model, Upsert, Delete, Change>(
-        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change>
+        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change, Store.Context>
     ) async throws {
         let resource = adapter.resourceName
         await track(.started(resource: resource))
         let startedAt = Date()
         do {
-            let context = modelContainer.mainContext
-            let metadata = try metadata(for: resource, in: context)
-            let pending = try adapter.fetchPending(context)
-            var sentVersions: [String: Date] = [:]
-            var pendingByKey: [String: Model] = [:]
-            for row in pending {
-                let key = adapter.businessKey(row)
-                if sentVersions[key] == nil {
-                    sentVersions[key] = row.localUpdatedAt
-                    pendingByKey[key] = row
+            let outbound = try await store.transaction { context in
+                let checkpoint = try self.store.checkpoint(for: resource, in: context)
+                let pending = try adapter.fetchPending(context)
+                var sentVersions: [String: Date] = [:]
+                for row in pending {
+                    let key = adapter.businessKey(row)
+                    if sentVersions[key] == nil { sentVersions[key] = row.localUpdatedAt }
                 }
-            }
-
-            var response = try await adapter.call(
-                SyncRequestDTO(
-                    since: metadata.cursor,
-                    limit: limit,
-                    upserts: adapter.makeUpserts(pending),
-                    deletes: adapter.makeDeletes(pending)
+                return Outbound(
+                    request: SyncRequestDTO(
+                        since: checkpoint?.cursor,
+                        limit: self.limit,
+                        upserts: adapter.makeUpserts(pending),
+                        deletes: adapter.makeDeletes(pending)
+                    ),
+                    sentVersions: sentVersions
                 )
+            }
+            logger.debug(
+                "Sync push for \(resource, privacy: .public): \(outbound.sentVersions.count) pending"
             )
+
+            var response = try await adapter.call(outbound.request)
             // Acks arrive on the push response. A full resync replaces that response, so keep
             // its acks and apply them together with any on the resync response.
             var applied = response.applied
             if response.fullResyncRequired {
-                response = try await fullResync(adapter, metadata: metadata, context: context)
+                response = try await fullResync(adapter)
                 applied += response.applied
             }
 
-            await applyAck(
-                applied,
-                pendingByKey: pendingByKey,
-                sentVersions: sentVersions,
-                resource: resource
-            )
-
-            var activeKeys = Set<String>()
-            var sawFull = try ingest(adapter, response, into: &activeKeys, context: context)
-            // While draining a full snapshot the cursor is held back until every page has been
-            // ingested and reconciled: if a later page fails, the next pass restarts the snapshot
-            // instead of resuming as a delta and never reconciling rows absent from it.
-            update(metadata, with: response, persistCursor: !sawFull)
-            try context.save()
+            let firstPage = response
+            let acks = applied
+            var outcome = try await store.transaction { context in
+                let blocked = try self.applyAcks(
+                    acks, sentVersions: outbound.sentVersions, adapter: adapter, context: context)
+                return try self.commitPage(
+                    firstPage, activeKeys: [], sawFull: false, blocked: blocked,
+                    adapter: adapter, context: context)
+            }
+            await reportBlocked(outcome.blocked, resource: resource)
+            var sawFull = outcome.isFull
             var changeCount = response.serverChanges.count
+            logger.debug(
+                "Sync page committed for \(resource, privacy: .public): \(response.serverChanges.count) changes, \(applied.count) acks"
+            )
 
             while response.hasMore {
                 try Task.checkCancellation()
@@ -205,18 +203,36 @@ extension SyncEngine {
                 {
                     throw SyncPaginationError.stalledCursor(resource: resource)
                 }
-                sawFull =
-                    try ingest(adapter, response, into: &activeKeys, context: context)
-                    || sawFull
-                update(metadata, with: response, persistCursor: !sawFull)
-                try context.save()
+                let page = response
+                let activeKeys = outcome.activeKeys
+                let sawFullSoFar = sawFull
+                outcome = try await store.transaction { context in
+                    try self.commitPage(
+                        page, activeKeys: activeKeys, sawFull: sawFullSoFar, blocked: [],
+                        adapter: adapter, context: context)
+                }
+                sawFull = outcome.isFull || sawFull
                 changeCount += response.serverChanges.count
+                logger.debug(
+                    "Sync page committed for \(resource, privacy: .public): \(response.serverChanges.count) changes"
+                )
             }
 
             if sawFull {
-                try reconcileFullSnapshot(adapter, activeKeys: activeKeys, context: context)
-                metadata.cursor = response.cursor
-                try context.save()
+                let activeKeys = outcome.activeKeys
+                let finalCursor = response.cursor
+                let tombstoned = try await store.transaction { context in
+                    let tombstoned = try self.reconcileFullSnapshot(
+                        adapter, activeKeys: activeKeys, context: context)
+                    var checkpoint =
+                        try self.store.checkpoint(for: resource, in: context) ?? SyncCheckpoint()
+                    checkpoint.cursor = finalCursor
+                    try self.store.saveCheckpoint(checkpoint, for: resource, in: context)
+                    return tombstoned
+                }
+                logger.debug(
+                    "Sync snapshot reconciled for \(resource, privacy: .public): \(tombstoned) tombstoned"
+                )
             }
 
             let durationMs = Int(Date().timeIntervalSince(startedAt) * 1000)
@@ -230,7 +246,7 @@ extension SyncEngine {
                 )
             )
         } catch {
-            logger.error("Sync failed for \(resource)", error: error)
+            logger.error("Sync failed", error: error, context: "resource=\(resource)")
             await track(
                 .failed(
                     resource: resource,
@@ -242,27 +258,39 @@ extension SyncEngine {
         }
     }
 
-    private func applyAck<Model: SyncableModel>(
+    /// Applies acknowledgements to the rows that are still pending, and returns the ones that
+    /// marked a row blocked.
+    ///
+    /// Ack guard: rows are re-read inside the transaction and an ack only lands when the row's
+    /// `localUpdatedAt` still equals the value it was pushed with. A row edited, or hard-deleted,
+    /// while the request was in flight is skipped and re-pushes next pass.
+    private func applyAcks<Model, Upsert, Delete, Change>(
         _ applied: [SyncAppliedDTO],
-        pendingByKey: [String: Model],
         sentVersions: [String: Date],
-        resource: String
-    ) async {
+        adapter: SyncResourceAdapter<Model, Upsert, Delete, Change, Store.Context>,
+        context: Store.Context
+    ) throws -> [SyncAppliedDTO] {
+        guard !applied.isEmpty else { return [] }
+        var pendingByKey: [String: Model] = [:]
+        for row in try adapter.fetchPending(context) {
+            let key = adapter.businessKey(row)
+            if pendingByKey[key] == nil { pendingByKey[key] = row }
+        }
+        var blocked: [SyncAppliedDTO] = []
         for status in applied {
-            guard let model = pendingByKey[status.key] else { continue }
-            // Ack guard: skip if the row was edited mid-flight; it re-pushes next sync.
+            guard var model = pendingByKey[status.key] else { continue }
             guard sentVersions[status.key] == model.localUpdatedAt else { continue }
-            apply(status, to: model)
+            apply(status, to: &model)
+            try adapter.persist(model, context)
+            pendingByKey[status.key] = model
             if status.statusKind == .blocked || status.statusKind == .rejected {
-                await track(
-                    .itemBlocked(
-                        resource: resource, status: status.status, reason: status.reason)
-                )
+                blocked.append(status)
             }
         }
+        return blocked
     }
 
-    private func apply(_ status: SyncAppliedDTO, to model: any SyncableModel) {
+    private func apply<Model: SyncableModel>(_ status: SyncAppliedDTO, to model: inout Model) {
         if let id = status.id { model.serverId = id }
         if let updatedAt = status.updatedAt {
             model.updatedAt = Date(timeIntervalSince1970: updatedAt)
@@ -281,12 +309,41 @@ extension SyncEngine {
         }
     }
 
+    /// Ingests one page and writes its checkpoint in the caller's transaction.
+    ///
+    /// While draining a full snapshot the cursor is held back until every page has been
+    /// ingested and reconciled: if a later page fails, the next pass restarts the snapshot
+    /// instead of resuming as a delta and never reconciling rows absent from it.
+    private func commitPage<Model, Upsert, Delete, Change>(
+        _ response: SyncResponseDTO<Change>,
+        activeKeys: Set<String>,
+        sawFull: Bool,
+        blocked: [SyncAppliedDTO],
+        adapter: SyncResourceAdapter<Model, Upsert, Delete, Change, Store.Context>,
+        context: Store.Context
+    ) throws -> PageOutcome {
+        var activeKeys = activeKeys
+        let isFull = try ingest(adapter, response, into: &activeKeys, context: context)
+        var checkpoint =
+            try store.checkpoint(for: adapter.resourceName, in: context) ?? SyncCheckpoint()
+        if !(isFull || sawFull) {
+            checkpoint.cursor = response.cursor
+        }
+        checkpoint.syncVersion = response.syncVersion
+        if let serverInfo = response.serverInfo {
+            checkpoint.serverInfo = serverInfo
+        }
+        checkpoint.lastSyncedAt = Date()
+        try store.saveCheckpoint(checkpoint, for: adapter.resourceName, in: context)
+        return PageOutcome(activeKeys: activeKeys, isFull: isFull, blocked: blocked)
+    }
+
     /// Applies one page's `serverChanges`; returns whether the page was a full snapshot.
     private func ingest<Model, Upsert, Delete, Change>(
-        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change>,
+        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change, Store.Context>,
         _ response: SyncResponseDTO<Change>,
         into activeKeys: inout Set<String>,
-        context: ModelContext
+        context: Store.Context
     ) throws -> Bool {
         let batch = try adapter.findExistingBatch?(response.serverChanges, context)
         var seenKeys = Set<String>()
@@ -305,39 +362,55 @@ extension SyncEngine {
             }
             // Pending guard: never clobber a row that still has un-pushed local changes.
             if let existing, existing.syncState != .synced { continue }
-            adapter.upsertFromChange(change, existing, context)
+            try adapter.upsertFromChange(change, existing, context)
         }
         return response.modeKind == .full
     }
 
+    /// Tombstones clean rows absent from the snapshot; returns how many it tombstoned.
     private func reconcileFullSnapshot<Model, Upsert, Delete, Change>(
-        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change>,
+        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change, Store.Context>,
         activeKeys: Set<String>,
-        context: ModelContext
-    ) throws {
-        for row in try adapter.fetchActive(context) where !row.isTombstoned {
+        context: Store.Context
+    ) throws -> Int {
+        var tombstoned = 0
+        for var row in try adapter.fetchActive(context) where !row.isTombstoned {
             // Tombstone guard: only clean rows absent from the snapshot; never delete
             // rows with un-pushed local changes.
             if row.syncState == .synced, !activeKeys.contains(adapter.businessKey(row)) {
                 row.isTombstoned = true
                 row.syncState = .synced
+                try adapter.persist(row, context)
+                tombstoned += 1
             }
         }
+        return tombstoned
     }
 
     /// Cursor too old to serve a delta: drop clean rows + cursor, then pull a fresh snapshot.
     private func fullResync<Model, Upsert, Delete, Change>(
-        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change>,
-        metadata: SyncMetadata,
-        context: ModelContext
+        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change, Store.Context>
     ) async throws -> SyncResponseDTO<Change> {
-        try adapter.purgeSynced(context)
-        metadata.cursor = nil
-        try context.save()
-        await track(.fullResyncStarted(resource: adapter.resourceName))
+        let resource = adapter.resourceName
+        try await store.transaction { context in
+            try adapter.purgeSynced(context)
+            var checkpoint =
+                try self.store.checkpoint(for: resource, in: context) ?? SyncCheckpoint()
+            checkpoint.cursor = nil
+            try self.store.saveCheckpoint(checkpoint, for: resource, in: context)
+        }
+        logger.debug("Sync full resync purged \(resource, privacy: .public)")
+        await track(.fullResyncStarted(resource: resource))
         return try await adapter.call(
             SyncRequestDTO(since: nil, limit: limit, upserts: [], deletes: [])
         )
+    }
+
+    private func reportBlocked(_ blocked: [SyncAppliedDTO], resource: String) async {
+        for status in blocked {
+            await track(
+                .itemBlocked(resource: resource, status: status.status, reason: status.reason))
+        }
     }
 }
 
@@ -345,14 +418,13 @@ extension SyncEngine {
 
 /// A type-erased ``SyncResourceAdapter`` for use with ``SyncEngine/syncAll(_:)``.
 ///
-/// Adapters are generic over four type parameters, so a heterogeneous list can't
+/// Adapters are generic over their model and wire types, so a heterogeneous list can't
 /// name a single adapter type. Wrap each adapter in an `AnySyncResource` to sync
-/// them together.
-@MainActor
-public struct AnySyncResource {
+/// them together; every wrapped adapter must use the same store's `Context`.
+public struct AnySyncResource<Store: SyncStore>: Sendable {
     /// Erases a concrete adapter.
     public init<Model, Upsert, Delete, Change>(
-        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change>
+        _ adapter: SyncResourceAdapter<Model, Upsert, Delete, Change, Store.Context>
     ) {
         resourceName = adapter.resourceName
         run = { try await $0.drive(adapter) }
@@ -361,6 +433,5 @@ public struct AnySyncResource {
     /// Stable identifier for the wrapped resource.
     public let resourceName: String
 
-    let run: (SyncEngine) async throws -> Void
+    let run: @Sendable (SyncEngine<Store>) async throws -> Void
 }
-#endif

@@ -37,6 +37,21 @@ case and bump ``SyncableModel/localUpdatedAt`` to the current date. The engine u
 the *ack guard*: an acknowledgement is only applied if the row hasn't been edited again since it
 was pushed.
 
+### Choose a store
+
+``SwiftDataSyncStore`` syncs the container's `mainContext` on the main actor; it is what
+`SyncEngine(modelContainer:)` uses. ``SwiftDataBackgroundSyncStore`` syncs on its own background
+context, off the main actor, and rolls a failed page back:
+
+```swift
+let engine = SyncEngine(modelContainer: container)
+let background = SyncEngine(store: SwiftDataBackgroundSyncStore(modelContainer: container))
+```
+
+Both read and write rows through a `ModelContext`, so the same ``SwiftDataSyncAdapter`` works
+with either. The engine type is ``SwiftDataSyncEngine`` for the main-context store and
+`SyncEngine<SwiftDataBackgroundSyncStore>` for the background one.
+
 ### Include SyncMetadata in the schema
 
 The engine stores each resource's cursor in a ``SyncMetadata`` row, so the container's schema
@@ -64,6 +79,10 @@ stores don't support. Keep it in a local store.
 | `fetchActive` | Every non-tombstoned row, for full-snapshot reconciliation. |
 | `purgeSynced` | Delete `.synced` rows before a full resync. |
 
+SwiftData models are live objects, so SwiftData adapters don't take a `persist` closure. Every
+closure is `@Sendable`. Apart from `call`, they run inside the store's transaction. `call` runs
+outside it, so to reach main-actor state from it, write it as `{ @MainActor request in … }`.
+
 ### What the engine guarantees
 
 - **Pending guard:** a server change never overwrites a row that still has unpushed local
@@ -75,6 +94,7 @@ stores don't support. Keep it in a local store.
 - **Snapshot reconciliation:** after all pages of a full snapshot, clean rows absent from it are
   tombstoned. The cursor is committed only once that completes, so a failed page restarts the
   snapshot instead of resuming as a delta.
+- **Atomic pages:** each page's rows, acknowledgements, and cursor are saved together.
 - **Serialization:** passes run under an ``AsyncLock``; share one lock across engines that must
   not overlap.
 
@@ -85,8 +105,12 @@ error is rethrown at the end.
 ### Observe and test
 
 Pass an `events` handler to forward ``SyncEvent`` values to analytics or logging.
+``SyncEvent/itemBlocked(resource:status:reason:)`` arrives after the page that carried the
+acknowledgement is saved.
 
 In tests, add the `SwiftCommonsTestSupport` product and use `makeInMemorySyncContainer(for:)`
 (which adds ``SyncMetadata`` for you), `SyncResponseDTO.fixture(...)`,
 `SyncAppliedDTO.fixture(...)`, and `recordingCall(returning:into:)` to script the transport and
 capture requests.
+
+For a store other than SwiftData, see <doc:SyncingCustomStores>.

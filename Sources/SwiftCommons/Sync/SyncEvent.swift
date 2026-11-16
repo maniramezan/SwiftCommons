@@ -2,7 +2,7 @@ import Foundation
 
 /// A lifecycle event emitted by the ``SyncEngine`` during a resource pass.
 ///
-/// Supply a handler to ``SyncEngine/init(modelContainer:limit:lock:events:logger:)``
+/// Supply a handler to ``SyncEngine/init(store:limit:lock:events:logger:)``
 /// to forward these to analytics, metrics, or logging. The engine never assumes
 /// a particular sink, so the same event stream works across apps.
 public enum SyncEvent: Sendable, Equatable {
@@ -29,6 +29,8 @@ public enum SyncEvent: Sendable, Equatable {
     ///   - message: The error's localized description.
     case failed(resource: String, errorType: String, message: String)
     /// The server blocked or rejected a pushed item.
+    ///
+    /// Emitted after the page carrying the acknowledgement commits.
     /// - Parameters:
     ///   - resource: The affected resource.
     ///   - status: The server status string (`blocked` or `rejected`).

@@ -46,12 +46,13 @@ SwiftCommons ships three products:
 
 | Trait | Default | Enables |
 |---|---|---|
-| `SwiftData` | on | `ModelContainer.make(for:inMemory:)`, `SyncEngine`, `SyncResourceAdapter`, `SyncMetadata`, and the SwiftData test helpers (`makeInMemoryModelContext`, `makeInMemorySyncContainer`) |
+| `SwiftData` | on | `ModelContainer.make(for:inMemory:)`, the SwiftData sync stores (`SwiftDataSyncStore`, `SwiftDataBackgroundSyncStore`, `SyncMetadata`, `SyncEngine(modelContainer:)`), and the SwiftData test helpers (`makeInMemoryModelContext`, `makeInMemorySyncContainer`) |
 | `CSV` | off | `CSV.parseRows` / `CSV.serializeRows`, `CSV.parseRecords` / `CSV.serializeRecords` |
 
 With no `traits:` argument you get the defaults, so the `SwiftData` APIs are included. A package that
 doesn't use SwiftData (for example, a networking library) can leave it out and keep everything else,
-including the sync DTOs, `SyncableModel`, `SyncState`, and `SyncEvent`:
+including `SyncEngine`, `SyncResourceAdapter`, `SyncStore`, the sync DTOs, `SyncableModel`, `SyncState`,
+and `SyncEvent`:
 
 ```swift
 .package(url: "https://github.com/maniramezan/SwiftCommons.git", from: "0.12.0", traits: [])
@@ -116,8 +117,9 @@ include `.defaults`:
   concurrent callers for the same key.
 - **Persistence** — `ModelContainer.make(for:inMemory:)`, a thin SwiftData bootstrap helper for
   apps, previews, and tests.
-- **Sync** — a generic `SyncEngine` that drives offline, cross-device sync for SwiftData-backed
-  resources through one contract-owning loop; resources plug in as `SyncResourceAdapter` values.
+- **Sync** — a generic `SyncEngine` that drives offline, cross-device sync through one
+  contract-owning loop over any `SyncStore` (SwiftData on the main or a background context,
+  GRDB, SQLite, Core Data); resources plug in as `SyncResourceAdapter` values.
 
 ## Usage
 
@@ -337,11 +339,13 @@ words, but a recognizer often repairs mildly mispronounced words, so it isn't ph
 pronunciation scoring. Leave `contextualStrings` empty when grading, or the recognizer is biased
 toward the expected sentence.
 
-### Sync (SwiftData)
+### Sync
 
-`SyncEngine` drives offline sync for SwiftData rows that conform to `SyncableModel`. Each resource
-plugs in with one `SyncResourceAdapter` (a struct of closures); the engine owns the ack guard,
-pending guard, pagination, full-snapshot reconciliation, and full-resync recovery.
+`SyncEngine` drives offline sync for rows that conform to `SyncableModel`. Each resource plugs in
+with one `SyncResourceAdapter` (a struct of closures); the engine owns the ack guard, pending
+guard, pagination, full-snapshot reconciliation, and full-resync recovery. Local reads and writes go
+through a `SyncStore`, which commits each page's rows and cursor in one transaction and decides
+where that transaction runs; the engine isn't bound to the main actor.
 
 ```swift
 @Model final class Item: SyncableModel {
@@ -358,8 +362,10 @@ pending guard, pagination, full-snapshot reconciliation, and full-resync recover
 // SyncMetadata stores each resource's cursor — it must be in your schema.
 let container = try ModelContainer.make(for: Item.self, SyncMetadata.self)
 let engine = SyncEngine(modelContainer: container, events: { analytics.track($0) })
+// Or sync off the main actor, on a private context:
+// let engine = SyncEngine(store: SwiftDataBackgroundSyncStore(modelContainer: container))
 
-let items = SyncResourceAdapter<Item, ItemUpsert, ItemDelete, ItemChange>(
+let items = SwiftDataSyncAdapter<Item, ItemUpsert, ItemDelete, ItemChange>(
     resourceName: "items",
     fetchPending: { try $0.fetch(FetchDescriptor<Item>(predicate: #Predicate { $0.syncState != .synced })) },
     businessKey: { $0.key },
@@ -378,8 +384,10 @@ try await engine.syncAll([AnySyncResource(items)])
 ```
 
 `SyncMetadata` uses `@Attribute(.unique)`, which CloudKit-backed containers don't support — keep
-it in a local (non-CloudKit) store. See the *Syncing SwiftData Resources* DocC article for the
-full contract.
+it in a local (non-CloudKit) store. Adapter closures are `@Sendable`; write `call:` as
+`{ @MainActor request in … }` when it needs main-actor state. See the *Syncing SwiftData Resources*
+DocC article for the full contract, and *Syncing Custom Stores* for implementing `SyncStore` over
+GRDB or SQLite with value-type rows.
 
 ### Persistence (SwiftData)
 

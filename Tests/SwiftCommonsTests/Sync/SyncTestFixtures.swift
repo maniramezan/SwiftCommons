@@ -65,12 +65,14 @@ enum SyncFixtures {
     /// Builds an adapter whose transport is the supplied `call` closure.
     ///
     /// ``SyncResourceAdapter/businessKey`` lowercases the item key, so the tests can
-    /// verify server-side key normalization the same way a real backend would.
-    @MainActor
+    /// verify server-side key normalization the same way a real backend would. `call` is
+    /// main-actor isolated so test closures can capture and mutate `Box` values.
     static func adapter(
         resourceName: String = "items",
-        call: @escaping (SyncRequestDTO<ItemUpsert, ItemDelete>) async throws -> ItemResponse
-    ) -> SyncResourceAdapter<SyncItem, ItemUpsert, ItemDelete, ItemChange> {
+        call:
+            @escaping @MainActor (SyncRequestDTO<ItemUpsert, ItemDelete>) async throws ->
+            ItemResponse
+    ) -> SwiftDataSyncAdapter<SyncItem, ItemUpsert, ItemDelete, ItemChange> {
         SyncResourceAdapter(
             resourceName: resourceName,
             fetchPending: { context in
@@ -89,7 +91,7 @@ enum SyncFixtures {
                     ItemDelete(id: $0.serverId, key: $0.key)
                 }
             },
-            call: call,
+            call: { request in try await call(request) },
             findExisting: { change, context in
                 try context.fetch(FetchDescriptor<SyncItem>())
                     .first { $0.key.lowercased() == change.key.lowercased() }

@@ -20,7 +20,7 @@ let package = Package(
         .trait(
             name: "SwiftData",
             description:
-                "Enables the SwiftData-backed APIs: ModelContainer helpers and the SyncEngine"),
+                "Enables the SwiftData-backed APIs: ModelContainer helpers and the SwiftData sync stores"),
         .trait(
             name: "CSV", description: "Enables lightweight CSV parsing and serialization helpers"),
         .default(enabledTraits: ["SwiftData"]),
