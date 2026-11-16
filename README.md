@@ -147,6 +147,7 @@ String(flag: true)     // "1"
 Bundle.main.versionAndBuildNumber  // "2.3.1 (142)"
 
 UUID().bytes             // [UInt8], canonical byte order
+UUID(namespace: .dnsNamespace, name: "python.org") // RFC 4122 v5: 886313e1-3b8a-5372-9b90-0c9aee199e5d
 ```
 
 ### Numbers & currency
