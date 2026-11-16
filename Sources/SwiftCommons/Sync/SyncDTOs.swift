@@ -57,12 +57,94 @@ public nonisolated struct SyncAppliedDTO: Decodable, Sendable, Equatable {
     public let key: String
     /// Assigned server id, when the row was created.
     public let id: Int?
-    /// Server outcome string.
+    /// Server outcome string. See ``statusKind`` for a typed view.
     public let status: String
     /// Server `updatedAt` in seconds since 1970, when available.
     public let updatedAt: TimeInterval?
     /// Human-readable reason, typically for a block or rejection.
     public let reason: String?
+
+    /// The typed outcome for ``status``. Unrecognized strings become ``Status/unknown(_:)``.
+    public var statusKind: Status { Status(rawValue: status) }
+
+    /// The outcome the server reported for one pushed change.
+    ///
+    /// The server may add outcomes over time, so decoding never fails: a string this version
+    /// doesn't know is kept as ``unknown(_:)``. The engine leaves a row untouched for an
+    /// unknown outcome.
+    public enum Status: Hashable, Sendable, RawRepresentable {
+        /// The row was created on the server.
+        case created
+        /// The row was updated on the server.
+        case updated
+        /// The row was deleted on the server.
+        case deleted
+        /// The server already had the pushed state.
+        case noop
+        /// The server blocked the change; the row waits for the app to resolve it.
+        case blocked
+        /// The server rejected the change.
+        case rejected
+        /// An outcome string this version doesn't recognize.
+        case unknown(String)
+
+        /// Creates a status from the wire string. Never fails; unrecognized strings become
+        /// ``unknown(_:)``.
+        public init(rawValue: String) {
+            switch rawValue {
+            case "created": self = .created
+            case "updated": self = .updated
+            case "deleted": self = .deleted
+            case "noop": self = .noop
+            case "blocked": self = .blocked
+            case "rejected": self = .rejected
+            default: self = .unknown(rawValue)
+            }
+        }
+
+        /// The wire string for this status.
+        public var rawValue: String {
+            switch self {
+            case .created: "created"
+            case .updated: "updated"
+            case .deleted: "deleted"
+            case .noop: "noop"
+            case .blocked: "blocked"
+            case .rejected: "rejected"
+            case .unknown(let value): value
+            }
+        }
+    }
+}
+
+/// Whether a ``SyncResponseDTO`` page is a full snapshot or a delta.
+///
+/// Unrecognized strings are kept as ``unknown(_:)`` and treated as a delta page.
+public nonisolated enum SyncResponseMode: Hashable, Sendable, RawRepresentable {
+    /// A snapshot page: rows absent from the full snapshot are tombstoned.
+    case full
+    /// A delta page.
+    case delta
+    /// A mode string this version doesn't recognize.
+    case unknown(String)
+
+    /// Creates a mode from the wire string. Never fails.
+    public init(rawValue: String) {
+        switch rawValue {
+        case "full": self = .full
+        case "delta": self = .delta
+        default: self = .unknown(rawValue)
+        }
+    }
+
+    /// The wire string for this mode.
+    public var rawValue: String {
+        switch self {
+        case .full: "full"
+        case .delta: "delta"
+        case .unknown(let value): value
+        }
+    }
 }
 
 /// Response envelope returned by the server for one resource pass.
@@ -124,7 +206,7 @@ public nonisolated struct SyncResponseDTO<Change: Decodable & Sendable>: Decodab
 
     /// Server sync-protocol version.
     public let syncVersion: Int
-    /// `"full"` for a snapshot page, otherwise a delta page.
+    /// `"full"` for a snapshot page, otherwise a delta page. See ``modeKind`` for a typed view.
     public let mode: String
     /// Per-item acknowledgements for pushed changes.
     public let applied: [SyncAppliedDTO]
@@ -138,4 +220,8 @@ public nonisolated struct SyncResponseDTO<Change: Decodable & Sendable>: Decodab
     public let fullResyncRequired: Bool
     /// App-defined passthrough values copied into ``SyncMetadata/serverInfo``.
     public let serverInfo: [String: String]?
+
+    /// The typed page mode for ``mode``. Unrecognized strings become
+    /// ``SyncResponseMode/unknown(_:)``.
+    public var modeKind: SyncResponseMode { SyncResponseMode(rawValue: mode) }
 }

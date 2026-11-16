@@ -53,6 +53,44 @@ struct SyncDTOsTests {
         #expect(response.fullResyncRequired)
     }
 
+    @Test(
+        arguments: [
+            ("created", SyncAppliedDTO.Status.created),
+            ("updated", .updated),
+            ("deleted", .deleted),
+            ("noop", .noop),
+            ("blocked", .blocked),
+            ("rejected", .rejected),
+            ("queued", .unknown("queued")),
+        ]
+    )
+    func appliedStatusMapsWireStringsAndRoundTripsThem(
+        wire: String, expected: SyncAppliedDTO.Status
+    ) {
+        let applied = SyncAppliedDTO(
+            key: "a", id: nil, status: wire, updatedAt: nil, reason: nil)
+
+        #expect(applied.statusKind == expected)
+        #expect(SyncAppliedDTO.Status(rawValue: wire) == expected)
+        #expect(expected.rawValue == wire)
+    }
+
+    @Test(
+        arguments: [
+            ("full", SyncResponseMode.full),
+            ("delta", .delta),
+            ("snapshot", .unknown("snapshot")),
+        ]
+    )
+    func responseModeMapsWireStringsAndRoundTripsThem(wire: String, expected: SyncResponseMode) {
+        let response = ItemResponse(
+            syncVersion: 1, mode: wire, applied: [], serverChanges: [], cursor: nil,
+            hasMore: false, fullResyncRequired: false)
+
+        #expect(response.modeKind == expected)
+        #expect(expected.rawValue == wire)
+    }
+
     @Test func requestEncodesAllFields() throws {
         let request = SyncRequestDTO(
             since: "cursor",
