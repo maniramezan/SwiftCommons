@@ -43,6 +43,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Serialize async work across awaits | `try await lock.withLock { … }` (`AsyncLock`) |
 | Deduplicate concurrent identical requests | `try await singleFlight.value(for: key) { … }` (`SingleFlight<Key, Value>`) |
 | Cap concurrency | `AsyncSemaphore(value: n).withPermit { … }` |
+| Stop waiting for a lock/permit when the task is cancelled | `lock.withLockCancellable { … }`, `semaphore.withPermitCancellable { … }` (throw `CancellationError`); plain `lock()` / `wait()` keep queuing after cancellation |
 | Fan one source out to many `AsyncStream`s | `AsyncBroadcaster<T>()` → `makeStream()` / `yield(_:)` / `finish()`; `replaysLatest: true` for current-value streams |
 | Debounce | `await Debouncer(delay: .milliseconds(300)).run { … }` |
 | Retry | `try await withRetry(attempts: 3, delay: .seconds(1)) { … }` |

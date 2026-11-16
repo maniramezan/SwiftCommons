@@ -118,4 +118,57 @@ struct AsyncSemaphoreTests {
 
         #expect(await log.order == Array(0..<waiterCount))
     }
+
+    @Test
+    func cancelledCancellableWaiterLeavesTheQueueWithoutTakingAPermit() async {
+        let semaphore = AsyncSemaphore(value: 1)
+        await semaphore.wait()
+        let waiter = Task { try await semaphore.waitCancellable() }
+        while await semaphore.waiterCount < 1 { await Task.yield() }
+
+        waiter.cancel()
+
+        await #expect(throws: CancellationError.self) { try await waiter.value }
+        #expect(await semaphore.waiterCount == 0)
+        await semaphore.signal()
+        // The permit is back: the cancelled waiter did not consume it.
+        #expect((try? await semaphore.waitCancellable()) != nil)
+    }
+
+    @Test
+    func alreadyCancelledTaskThrowsWithoutTakingAPermit() async {
+        let semaphore = AsyncSemaphore(value: 1)
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            try await semaphore.waitCancellable()
+        }
+
+        await #expect(throws: CancellationError.self) { try await task.value }
+        await semaphore.wait()
+    }
+
+    @Test
+    func withPermitCancellableRunsTheOperationAndReleases() async throws {
+        let semaphore = AsyncSemaphore(value: 1)
+
+        let value = try await semaphore.withPermitCancellable { 42 }
+
+        #expect(value == 42)
+        await semaphore.wait()
+    }
+
+    /// Not `Sendable`: `withPermit` must accept a body that captures it.
+    private final class Tally {
+        var value = 0
+    }
+
+    @Test
+    func withPermitAcceptsAnOperationCapturingNonSendableState() async {
+        let semaphore = AsyncSemaphore(value: 1)
+        let tally = Tally()
+
+        await semaphore.withPermit { tally.value += 1 }
+
+        #expect(tally.value == 1)
+    }
 }
