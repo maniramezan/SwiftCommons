@@ -140,7 +140,12 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `AsyncLock` is a FIFO async mutex for serializing work across `await` suspension points; use
   `withLock { ... }` (releases on throw) rather than hand-paired `lock()`/`unlock()`. Not reentrant.
 - `AsyncSemaphore` is a counting async semaphore (`wait()`/`signal()`/`withPermit { ... }`) for
-  capping concurrent access (e.g. limiting parallel network requests).
+  capping concurrent access (e.g. limiting parallel network requests). `withPermit`, like
+  `AsyncLock.withLock`, runs its body on the caller's actor, so the body may capture non-`Sendable` state.
+- `wait()` and `lock()` ignore cancellation (a cancelled waiter still queues and acquires). The
+  `lockCancellable()`/`withLockCancellable`/`waitCancellable()`/`withPermitCancellable` variants throw
+  `CancellationError` and leave the queue instead; a waiter cancelled that way never held the
+  lock/permit, so it must not `unlock()`/`signal()`. Both share `AsyncWaiterQueue` (over `FIFOQueue`).
 - `AsyncBroadcaster<Element>` fans one source out to many `AsyncStream`s (`makeStream()`,
   `yield(_:)`, `finish()`, optional latest-value replay). A final class guarded by
   a `Mutex`: streams register synchronously in `makeStream()` and unregister

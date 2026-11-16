@@ -18,6 +18,20 @@ struct FIFOQueue<Element> {
         storage.append(element)
     }
 
+    /// Removes and returns the first element matching `predicate`, or `nil` if none matches.
+    ///
+    /// O(n); meant for the rare cancellation path, not the hot path.
+    mutating func removeFirst(where predicate: (Element) -> Bool) -> Element? {
+        guard let index = storage[head...].firstIndex(where: { $0.map(predicate) ?? false })
+        else { return nil }
+        let element = storage.remove(at: index)
+        if head == storage.count {
+            storage.removeAll(keepingCapacity: true)
+            head = 0
+        }
+        return element
+    }
+
     /// Removes and returns the element at the front, or `nil` when the queue is empty.
     mutating func dequeue() -> Element? {
         guard head < storage.count else { return nil }
