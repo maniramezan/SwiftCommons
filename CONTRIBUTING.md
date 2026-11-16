@@ -29,7 +29,7 @@ prompt, allow the plugin to run.
 ## Documentation
 
 Public API changes should include DocC or doc comments where appropriate.
-DocC content lives in `Sources/SwiftCommons/SwiftCommons.docc`.
+DocC catalogs live next to each module: `Sources/SwiftCommons/SwiftCommons.docc`, `Sources/SwiftCommonsSpeech/SwiftCommonsSpeech.docc`, and `Sources/SwiftCommonsTestSupport/SwiftCommonsTestSupport.docc`. Cross-module links (for example from `SwiftCommonsTestSupport` to `SwiftCommons`) do not resolve, so use plain code formatting for those.
 
 ## Submitting Changes
 

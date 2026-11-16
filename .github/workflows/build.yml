@@ -98,21 +98,28 @@ jobs:
         run: |
           swift build \
             --enable-all-traits \
-            --target SwiftCommons \
             -Xswiftc -emit-symbol-graph \
             -Xswiftc -emit-symbol-graph-dir \
             -Xswiftc /tmp/symbolgraphs
 
+      # DocC rejects symbol graphs from other modules, so give each catalog only its own
+      # module's graphs (`Module.symbols.json` and `Module@Extended.symbols.json`).
       - name: Generate DocC
         run: |
-          xcrun docc convert \
-            Sources/SwiftCommons/SwiftCommons.docc \
-            --additional-symbol-graph-dir /tmp/symbolgraphs \
-            --fallback-display-name SwiftCommons \
-            --fallback-bundle-identifier com.maniramezan.swiftcommons \
-            --warnings-as-errors \
-            --analyze \
-            --output-path /tmp/docc
+          for module in SwiftCommons SwiftCommonsSpeech SwiftCommonsTestSupport; do
+            mkdir -p "/tmp/symbolgraphs-${module}"
+            cp "/tmp/symbolgraphs/${module}.symbols.json" "/tmp/symbolgraphs-${module}/"
+            find /tmp/symbolgraphs -name "${module}@*.symbols.json" \
+              -exec cp {} "/tmp/symbolgraphs-${module}/" \;
+            xcrun docc convert \
+              "Sources/${module}/${module}.docc" \
+              --additional-symbol-graph-dir "/tmp/symbolgraphs-${module}" \
+              --fallback-display-name "${module}" \
+              --fallback-bundle-identifier "com.maniramezan.${module}" \
+              --warnings-as-errors \
+              --analyze \
+              --output-path "/tmp/docc-${module}"
+          done
 
       # Consumers that opt out with `traits: []` get everything except the SwiftData-backed code.
       - name: Build without default traits

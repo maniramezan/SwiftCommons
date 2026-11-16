@@ -101,4 +101,35 @@ struct AsyncLockTests {
             #expect(entries[pairStart + 1] == "end \(startIndex)")
         }
     }
+
+    /// Records the order in which waiters acquire the lock.
+    private actor AcquisitionLog {
+        private(set) var order: [Int] = []
+        func record(_ index: Int) { order.append(index) }
+    }
+
+    @Test
+    func resumesManyWaitersInArrivalOrder() async {
+        let lock = AsyncLock()
+        let log = AcquisitionLog()
+        let waiterCount = 500
+        await lock.lock()
+
+        var waiters: [Task<Void, Never>] = []
+        for index in 0..<waiterCount {
+            waiters.append(
+                Task {
+                    await lock.lock()
+                    await log.record(index)
+                    await lock.unlock()
+                })
+            // Let each waiter enqueue before the next starts so arrival order is deterministic.
+            while await lock.waiterCount <= index { await Task.yield() }
+        }
+
+        await lock.unlock()
+        for waiter in waiters { await waiter.value }
+
+        #expect(await log.order == Array(0..<waiterCount))
+    }
 }

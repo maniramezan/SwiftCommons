@@ -196,9 +196,7 @@ extension Calendar {
     /// Returns true when the provided day/month/year match today in this calendar.
     public func isToday(day: Int, month: Int, year: Int) -> Bool {
         let today = Date()
-        let todayYear = self.year(from: today)
-        let todayMonth = self.month(from: today)
-        let todayDay = self.day(from: today)
-        return todayDay == day && todayMonth == month && todayYear == year
+        let components = dateComponents([.year, .month, .day], from: today)
+        return components.day == day && components.month == month && components.year == year
     }
 }

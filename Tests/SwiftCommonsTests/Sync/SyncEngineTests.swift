@@ -297,6 +297,64 @@ struct SyncEngineTests {
         #expect(metadata.cursor == "page-2")
     }
 
+    @Test func paginationThatNeverAdvancesTheCursorFailsInsteadOfLooping() async throws {
+        let container = try SyncFixtures.makeContainer()
+        let callCount = Box<Int>(0)
+        let adapter = SyncFixtures.adapter { _ in
+            callCount.value += 1
+            return SyncFixtures.response(cursor: "stuck", hasMore: true)
+        }
+
+        await #expect(throws: SyncPaginationError.stalledCursor(resource: adapter.resourceName)) {
+            try await SyncEngine(modelContainer: container).sync(adapter)
+        }
+        #expect(callCount.value == 2)
+    }
+
+    @Test func paginationWithAnUnchangedCursorStillDrainsWhenPagesCarryChanges() async throws {
+        let container = try SyncFixtures.makeContainer()
+        let callCount = Box<Int>(0)
+        let adapter = SyncFixtures.adapter { _ in
+            let call = callCount.value
+            callCount.value += 1
+            return SyncFixtures.response(
+                serverChanges: [
+                    ItemChange(key: "row-\(call)", title: "T", serverId: call, isDeleted: false)
+                ],
+                cursor: "same",
+                hasMore: call < 2
+            )
+        }
+
+        try await SyncEngine(modelContainer: container).sync(adapter)
+
+        #expect(callCount.value == 3)
+    }
+
+    @Test func cancellationStopsThePaginationDrainBetweenPages() async throws {
+        let container = try SyncFixtures.makeContainer()
+        let callCount = Box<Int>(0)
+        let engineTask = Box<Task<Void, any Error>?>(nil)
+        let adapter = SyncFixtures.adapter { _ in
+            let call = callCount.value
+            callCount.value += 1
+            if call == 0 { engineTask.value?.cancel() }
+            return SyncFixtures.response(
+                serverChanges: [
+                    ItemChange(key: "row-\(call)", title: "T", serverId: call, isDeleted: false)
+                ],
+                cursor: "cursor-\(call)",
+                hasMore: true
+            )
+        }
+        let engine = SyncEngine(modelContainer: container)
+        let task = Task { try await engine.sync(adapter) }
+        engineTask.value = task
+
+        await #expect(throws: CancellationError.self) { try await task.value }
+        #expect(callCount.value == 1)
+    }
+
     // MARK: Full resync
 
     @Test func fullResyncPurgesSyncedRowsAndResetsCursor() async throws {

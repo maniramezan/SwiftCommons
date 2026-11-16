@@ -52,8 +52,9 @@ public protocol SpeechSynthesizing: AnyObject {
 
     /// Speaks `request` and returns its progress. The stream ends with
     /// ``SpeechSynthesisEvent/finished`` or ``SpeechSynthesisEvent/cancelled``.
-    /// - Parameter interrupting: Stops current speech first when `true`; queues after it when
-    ///   `false`.
+    /// - Parameters:
+    ///   - request: The text, language, and delivery settings to speak.
+    ///   - interrupting: Stops current speech first when `true`; queues after it when `false`.
     func speak(_ request: SpeechSynthesisRequest, interrupting: Bool) -> AsyncStream<
         SpeechSynthesisEvent
     >
