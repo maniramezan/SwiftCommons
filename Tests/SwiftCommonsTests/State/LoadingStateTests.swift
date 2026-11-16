@@ -128,4 +128,27 @@ struct LoadingErrorTests {
         let task = Task { await LoadingState<Int>.load { await viewModel.fetch() } }
         #expect(await task.value == .loaded(1))
     }
+
+    @Test
+    func mapTransformsOnlyTheLoadedValue() {
+        let loaded: LoadingState<Int> = .loaded(2)
+        let failure = LoadingError(message: "No network.", kind: .offline)
+
+        #expect(loaded.map { String($0 * 2) } == .loaded("4"))
+        #expect(LoadingState<Int>.idle.map { String($0) } == .idle)
+        #expect(LoadingState<Int>.loading.map { String($0) } == .loading)
+        #expect(LoadingState<Int>.failed(failure).map { String($0) } == .failed(failure))
+    }
+
+    private struct TransformError: Error {}
+
+    @Test
+    func mapRethrowsTransformErrorsOnlyForLoadedValues() {
+        #expect(throws: TransformError.self) {
+            try LoadingState<Int>.loaded(1).map { _ -> Int in throw TransformError() }
+        }
+        #expect(throws: Never.self) {
+            try LoadingState<Int>.idle.map { _ -> Int in throw TransformError() }
+        }
+    }
 }

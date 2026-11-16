@@ -58,7 +58,8 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   descriptions) for storing or comparing errors.
 - **State & configuration** — a generic ``LoadingState`` machine with
   ``LoadingError`` for async fetches (including ``LoadingState/load(_:)`` to
-  wrap a throwing async operation). ``LoadingErrorKind`` and ``LoadingErrorClassifiable``
+  wrap a throwing async operation and ``LoadingState/map(_:)`` to transform the loaded value).
+  ``RefreshableLoadingState`` keeps the last loaded value while a reload runs or fails. ``LoadingErrorKind`` and ``LoadingErrorClassifiable``
   provide safe failure categories that apps can map to localized copy. A coercing ``ConfigValue`` has
   loaders for the process environment and decoded property lists, plus a
   ``ConfigValueType`` tag and ``ConfigValue/init(string:valueType:)`` for
@@ -113,6 +114,7 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 ### State & Configuration
 
 - ``LoadingState``
+- ``RefreshableLoadingState``
 - ``LoadingError``
 - ``LoadingErrorKind``
 - ``LoadingErrorClassifiable``

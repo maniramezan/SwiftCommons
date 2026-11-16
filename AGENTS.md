@@ -130,7 +130,9 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `LoadingState<Value>` models idle/loading/loaded/failed screen state; `LoadingState.load { ... }`
   runs a throwing async operation and maps the outcome; `LoadingError(from:)` redacts internal
   error details behind safe offline/timeout messages or a generic fallback. `LoadingErrorClassifiable`
-  supplies `LoadingErrorKind`; apps can map `LoadingError.kind` to localized copy.
+  supplies `LoadingErrorKind`; `LoadingState.map` transforms the loaded value; `RefreshableLoadingState`
+  wraps a state plus `lastValue` (`beginLoading()` / `finish(with:)`, deliberately two sync mutations
+  so no exclusive access spans the `await`) to keep stale content visible while reloading; apps can map `LoadingError.kind` to localized copy.
 - `ConfigValue` is a `bool`/`string`/`int`/`double` enum with lenient coercion accessors
   (`boolValue`, `stringValue`, `intValue`, `doubleValue`); `ConfigValue.environment(_:)` loads
   `[String: ConfigValue]` from `ProcessInfo.environment` (or an injected dictionary) for tests;
