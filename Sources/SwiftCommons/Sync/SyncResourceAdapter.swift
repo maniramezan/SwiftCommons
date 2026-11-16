@@ -22,6 +22,9 @@ public struct SyncResourceAdapter<
     Change: Decodable & Sendable
 > {
     /// Creates an adapter from its resource-specific closures.
+    ///
+    /// Each closure parameter is stored in the property of the same name; the optional
+    /// `findExistingBatch` defaults to `nil`.
     public init(
         resourceName: String,
         fetchPending: @escaping (ModelContext) throws -> [Model],
@@ -35,7 +38,8 @@ public struct SyncResourceAdapter<
         isChangeDeleted: @escaping (Change) -> Bool,
         upsertFromChange: @escaping (Change, Model?, ModelContext) -> Void,
         fetchActive: @escaping (ModelContext) throws -> [Model],
-        purgeSynced: @escaping (ModelContext) throws -> Void
+        purgeSynced: @escaping (ModelContext) throws -> Void,
+        findExistingBatch: (([Change], ModelContext) throws -> [String: Model])? = nil
     ) {
         self.resourceName = resourceName
         self.fetchPending = fetchPending
@@ -49,6 +53,7 @@ public struct SyncResourceAdapter<
         self.upsertFromChange = upsertFromChange
         self.fetchActive = fetchActive
         self.purgeSynced = purgeSynced
+        self.findExistingBatch = findExistingBatch
     }
 
     /// Stable identifier for the resource; also keys its ``SyncMetadata`` row.
@@ -65,6 +70,14 @@ public struct SyncResourceAdapter<
     public let call: (SyncRequestDTO<Upsert, Delete>) async throws -> SyncResponseDTO<Change>
     /// Finds the local row a server change refers to, if any.
     public let findExisting: (Change, ModelContext) throws -> Model?
+    /// Finds the local rows for a whole page of server changes in one fetch.
+    ///
+    /// When set, the engine calls it once per page instead of calling ``findExisting`` once per
+    /// change, which turns a 100-change page from 100 fetches into one. The returned dictionary
+    /// is keyed by ``changeKey``; changes without a key, and changes whose key already appeared
+    /// earlier on the same page, still use ``findExisting`` so rows inserted mid-page are found.
+    /// Leave it `nil` to look rows up one at a time.
+    public let findExistingBatch: (([Change], ModelContext) throws -> [String: Model])?
     /// Active-row key for a change, or `nil` if the change can't contribute one.
     public let changeKey: (Change) -> String?
     /// Whether a server change represents a deletion.
