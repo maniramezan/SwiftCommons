@@ -55,6 +55,32 @@ struct AudioLevelMeterTests {
         #expect(quiet >= 0)
     }
 
+    @Test(arguments: [
+        (Float(0.1), Double(0.6)),
+        (Float(0.5), Double(0.8796)),
+        (Float(1), Double(1)),
+        (Float(0.001), Double(0)),
+    ])
+    func constantSignalReadsAsItsDecibelLevel(amplitude: Float, expected: Double) {
+        let samples = [Float](repeating: amplitude, count: 1024)
+
+        let level = samples.withUnsafeBufferPointer { AudioLevelMeter.level(of: $0) }
+
+        #expect(abs(level - expected) < 0.001)
+    }
+
+    @Test
+    func levelMatchesAScalarRMSOnVaryingSamples() {
+        let samples = (0..<4096).map { Float(sin(Double($0) * 0.05)) * 0.3 }
+        let meanSquare = samples.reduce(Float(0)) { $0 + $1 * $1 } / Float(samples.count)
+        let decibels = 20 * log10(meanSquare.squareRoot())
+        let expected = Double(min(max((decibels + 50) / 50, 0), 1))
+
+        let level = samples.withUnsafeBufferPointer { AudioLevelMeter.level(of: $0) }
+
+        #expect(abs(level - expected) < 1e-5)
+    }
+
     @Test
     func emptySamplesReadAsSilence() {
         #expect(AudioLevelMeter.level(of: UnsafeBufferPointer<Float>(start: nil, count: 0)) == 0)
