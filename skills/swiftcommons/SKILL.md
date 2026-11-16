@@ -109,7 +109,8 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 - **`URL` conforms to `ExpressibleByStringLiteral`.** Only use literals for known-good
   constants; an invalid literal is a runtime `preconditionFailure`.
 - **CSV is opt-in.** Enable the `CSV` package trait to get `CSV.parseRows` /
-  `CSV.serializeRows`.
+  `CSV.serializeRows` (plus `parseRecords` for header-keyed rows). Pass `delimiter: .semicolon`,
+  `.tab`, `.pipe`, or `CSV.Delimiter("~")` for other separators; the delimiter must be ASCII.
 - **SwiftData APIs are a default trait.** `ModelContainer.make`, `SyncEngine`,
   `SyncResourceAdapter`, and `SyncMetadata` need the `SwiftData` trait, which is on unless the
   dependency lists `traits:`. Listing traits replaces the defaults, so write

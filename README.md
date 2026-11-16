@@ -47,7 +47,7 @@ SwiftCommons ships three products:
 | Trait | Default | Enables |
 |---|---|---|
 | `SwiftData` | on | `ModelContainer.make(for:inMemory:)`, `SyncEngine`, `SyncResourceAdapter`, `SyncMetadata`, and the SwiftData test helpers (`makeInMemoryModelContext`, `makeInMemorySyncContainer`) |
-| `CSV` | off | `CSV.parseRows` / `CSV.serializeRows` |
+| `CSV` | off | `CSV.parseRows` / `CSV.serializeRows`, `CSV.parseRecords` / `CSV.serializeRecords` |
 
 With no `traits:` argument you get the defaults, so the `SwiftData` APIs are included. A package that
 doesn't use SwiftData (for example, a networking library) can leave it out and keep everything else,
@@ -110,7 +110,8 @@ include `.defaults`:
 - **Timeouts** — `withTimeout(_:clock:operation:)` races async work against an injectable clock,
   cancels the losing task, and throws `TimeoutError` when time expires. Operations must cooperate
   with cancellation for prompt completion.
-- **CSV** — lightweight CSV parsing/serialization (behind the `CSV` package trait).
+- **CSV** — lightweight CSV parsing/serialization with custom delimiters and header-keyed records
+  (behind the `CSV` package trait).
 - **Call coalescing** — `SingleFlight<Key, Value>`, which shares one in-flight async call among
   concurrent callers for the same key.
 - **Persistence** — `ModelContainer.make(for:inMemory:)`, a thin SwiftData bootstrap helper for
