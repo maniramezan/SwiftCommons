@@ -76,6 +76,9 @@ extension DateFormatter {
     /// The fixed locale used for locale-independent patterns.
     private static let posixLocale = Locale(identifier: "en_US_POSIX")
 
+    /// The fixed calendar used for locale-independent patterns.
+    private static let gregorian = Calendar(identifier: .gregorian)
+
     /// Returns a cached date formatter for the given type, locale, and time zone.
     ///
     /// Numeric patterns ignore `locale` and always use the Gregorian calendar with
@@ -91,7 +94,7 @@ extension DateFormatter {
     ) -> DateFormatter {
         let isLocaleIndependent = formatterType.isLocaleIndependent
         let resolvedLocale = isLocaleIndependent ? posixLocale : locale
-        let calendar: Calendar? = isLocaleIndependent ? Calendar(identifier: .gregorian) : nil
+        let calendar: Calendar? = isLocaleIndependent ? gregorian : nil
         return FormatterCache.formatter(
             for: DateFormatter.CacheKey.date(
                 format: .pattern(formatterType.rawValue), calendar: calendar,

@@ -18,7 +18,10 @@ import Foundation
 /// they arrived (first-in, first-out).
 public actor AsyncSemaphore {
     private var count: Int
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var waiters = FIFOQueue<CheckedContinuation<Void, Never>>()
+
+    /// The number of suspended waiters. Tests only.
+    var waiterCount: Int { waiters.count }
 
     /// Creates a semaphore that allows up to `value` concurrent holders.
     /// - Parameter value: The number of concurrent permits available. Must be
@@ -34,15 +37,15 @@ public actor AsyncSemaphore {
             count -= 1
             return
         }
-        await withCheckedContinuation { waiters.append($0) }
+        await withCheckedContinuation { waiters.enqueue($0) }
     }
 
     /// Releases a permit, resuming the next waiter if any.
     public func signal() {
-        if waiters.isEmpty {
-            count += 1
+        if let next = waiters.dequeue() {
+            next.resume()
         } else {
-            waiters.removeFirst().resume()
+            count += 1
         }
     }
 

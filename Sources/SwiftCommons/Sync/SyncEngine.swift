@@ -118,6 +118,21 @@ public final class SyncEngine {
     private let eventsTrack: @Sendable (SyncEvent) async -> Void
 }
 
+// MARK: - Errors
+
+/// Thrown when the server keeps reporting more pages without making progress.
+enum SyncPaginationError: Error, Equatable, LocalizedError {
+    /// A page reported `hasMore` with the cursor it was requested with and no changes.
+    case stalledCursor(resource: String)
+
+    var errorDescription: String? {
+        switch self {
+        case .stalledCursor(let resource):
+            "Sync for \(resource) stopped: the server reported more pages without advancing the cursor."
+        }
+    }
+}
+
 // MARK: - Engine
 
 extension SyncEngine {
@@ -134,14 +149,15 @@ extension SyncEngine {
             let context = modelContainer.mainContext
             let metadata = try metadata(for: resource, in: context)
             let pending = try adapter.fetchPending(context)
-            let sentVersions = Dictionary(
-                pending.map { (adapter.businessKey($0), $0.localUpdatedAt) },
-                uniquingKeysWith: { first, _ in first }
-            )
-            let pendingByKey = Dictionary(
-                pending.map { (adapter.businessKey($0), $0) },
-                uniquingKeysWith: { first, _ in first }
-            )
+            var sentVersions: [String: Date] = [:]
+            var pendingByKey: [String: Model] = [:]
+            for row in pending {
+                let key = adapter.businessKey(row)
+                if sentVersions[key] == nil {
+                    sentVersions[key] = row.localUpdatedAt
+                    pendingByKey[key] = row
+                }
+            }
 
             var response = try await adapter.call(
                 SyncRequestDTO(
@@ -176,10 +192,19 @@ extension SyncEngine {
             var changeCount = response.serverChanges.count
 
             while response.hasMore {
+                try Task.checkCancellation()
+                let requestedCursor = response.cursor
                 response = try await adapter.call(
                     SyncRequestDTO(
-                        since: response.cursor, limit: limit, upserts: [], deletes: [])
+                        since: requestedCursor, limit: limit, upserts: [], deletes: [])
                 )
+                // A page that claims more data but neither advances the cursor nor carries
+                // changes would be requested again unchanged, forever.
+                if response.hasMore && response.cursor == requestedCursor
+                    && response.serverChanges.isEmpty
+                {
+                    throw SyncPaginationError.stalledCursor(resource: resource)
+                }
                 sawFull =
                     try ingest(adapter, response, into: &activeKeys, context: context)
                     || sawFull

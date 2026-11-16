@@ -54,27 +54,44 @@ extension Logger {
     // MARK: Privacy Helpers
 
     // Note: OSLog privacy must be compile-time constants, so we provide
-    // separate methods for each privacy level rather than a parameter
+    // separate methods for each privacy level rather than a parameter.
+    //
+    // These methods take a `String`, so the caller builds the message eagerly, even when the
+    // level isn't being collected. For expensive messages, check the level yourself or use
+    // ``LibraryLogger``, whose messages are `@autoclosure`s.
 
     /// Log a debug message with public privacy (always visible in logs)
+    ///
+    /// The `message` string is built eagerly by the caller, even when debug logs are not being
+    /// collected. Avoid expensive string construction on hot paths, or use ``LibraryLogger``,
+    /// which defers building skipped messages.
     /// - Parameter message: The message to log
     public func debugPublic(_ message: String) {
         self.debug("\(message, privacy: .public)")
     }
 
     /// Log a debug message with private privacy (redacted in logs)
+    ///
+    /// The `message` string is built eagerly by the caller, even when debug logs are not being
+    /// collected.
     /// - Parameter message: The message to log
     public func debugPrivate(_ message: String) {
         self.debug("\(message, privacy: .private)")
     }
 
     /// Log an info message with public privacy (always visible in logs)
+    ///
+    /// The `message` string is built eagerly by the caller, even when info logs are not being
+    /// collected.
     /// - Parameter message: The message to log
     public func infoPublic(_ message: String) {
         self.info("\(message, privacy: .public)")
     }
 
     /// Log an info message with private privacy (redacted in logs)
+    ///
+    /// The `message` string is built eagerly by the caller, even when info logs are not being
+    /// collected.
     /// - Parameter message: The message to log
     public func infoPrivate(_ message: String) {
         self.info("\(message, privacy: .private)")

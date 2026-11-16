@@ -20,7 +20,10 @@ import Foundation
 /// reentrant: acquiring it again from inside its own critical section deadlocks.
 public actor AsyncLock {
     private var locked = false
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var waiters = FIFOQueue<CheckedContinuation<Void, Never>>()
+
+    /// The number of suspended acquirers. Tests only.
+    var waiterCount: Int { waiters.count }
 
     /// Creates an unlocked lock.
     public init() {}
@@ -31,7 +34,7 @@ public actor AsyncLock {
             locked = true
             return
         }
-        await withCheckedContinuation { waiters.append($0) }
+        await withCheckedContinuation { waiters.enqueue($0) }
     }
 
     /// Runs `body` while holding the lock, releasing it afterwards even if `body` throws.
@@ -58,10 +61,10 @@ public actor AsyncLock {
 
     /// Releases the lock, resuming the next waiter if any.
     public func unlock() {
-        if waiters.isEmpty {
-            locked = false
+        if let next = waiters.dequeue() {
+            next.resume()
         } else {
-            waiters.removeFirst().resume()
+            locked = false
         }
     }
 }

@@ -16,7 +16,7 @@ extension String {
     ///     "hi".isBlank   // false
     @inlinable
     public var isBlank: Bool {
-        trimmed.isEmpty
+        unicodeScalars.allSatisfy { CharacterSet.whitespacesAndNewlines.contains($0) }
     }
 
     /// The trimmed string, or `nil` if it is blank.
@@ -28,7 +28,8 @@ extension String {
     ///     " hi ".nilIfBlank  // "hi"
     @inlinable
     public var nilIfBlank: String? {
-        isBlank ? nil : trimmed
+        let result = trimmed
+        return result.isEmpty ? nil : result
     }
 
     /// Prepends `character` unless it is already the first character.

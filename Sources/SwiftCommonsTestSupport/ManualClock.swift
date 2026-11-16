@@ -3,7 +3,7 @@ import SwiftCommons
 import TestCommons
 
 /// A fake, manually-advanced clock for testing code built on
-/// ``SwiftCommons/DelayClock``, such as `withRetry` and `Debouncer`.
+/// `DelayClock`, such as `withRetry` and `Debouncer`.
 ///
 /// Calls to `sleep(for:)` suspend until the fake clock is advanced past their
 /// requested duration, instead of waiting on real time:

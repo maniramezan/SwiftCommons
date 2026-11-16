@@ -77,7 +77,13 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 
 - Safe array access with optional or defaulted subscripts (`Array+Extensions`).
 - `Optional.ifNil(_:)` for defaulting optionals.
-- `String.trimmed`, `.isBlank`, `.nilIfBlank` for normalizing text input.
+- `String.trimmed`, `.isBlank`, `.nilIfBlank` for normalizing text input; `String.ensuringStarts(with:)`
+  prepends a missing first character.
+- `StringParsable` gives `T(parsing:)` for `Bool` (lenient: true/false, 1/0, yes/no, on/off), `Int`,
+  and `Double`; `String(flag:)` encodes a boolean flag.
+- `BidirectionalCollection.trimmingSuffix(while:)`, `.trimmingSuffix(_:)` (one matching sequence, or
+  a regex) and the mutating `trimSuffix` overloads mirror the standard library's prefix trimming and
+  return a subsequence. `Character.isAlphanumeric` is the Unicode letter-or-number check.
 - `Bundle.appVersion`, `.buildNumber`, `.versionAndBuildNumber` for app version display.
 - `AppVersion(string:)` compares numeric marketing versions, defaults missing components to zero,
   and ignores suffixes; it does not implement semantic-version prerelease precedence.
@@ -92,6 +98,10 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   `.formatCurrency(_:currencyCode:locale:)`, `.formatDecimal(_:fractionDigits:usesGroupingSeparator:locale:)`,
   and `.formatPercent(_:fractionDigits:locale:)` cache formatters per-thread and per (purpose, locale)
   the same way.
+- `FormatterCache.formatter(for:make:)` is the generic per-thread cache behind all of the above: one
+  formatter per (formatter type, key type, key, thread), never evicted, so keys must come from a
+  bounded set of configurations. `MeasurementFormatter.cached(unitStyle:unitOptions:locale:)` is
+  the ready-made use of it for measurements.
 - `Date.relativeDescription(to:unitsStyle:locale:)` wraps `RelativeDateTimeFormatter` with the same
   per-thread caching pattern (e.g. "1 hour ago").
 - `Calendar` extensions provide date math (start of week/month, month symbols, adding months/years,
@@ -102,8 +112,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - `Locale.identifier(language:country:)` plus `Locale.Identifiers` convenience constants.
 - Logging helpers built on OSLog with public/private convenience methods and context helpers.
 - `LibraryLogger(subsystem:defaultLevel:)` is a level-gated logger for *library* packages: the level
-  (`LibraryLogger.Level`, `off`...`debug`, default `.warning`) lives in an `OSAllocatedUnfairLock`
-  per instance (no process-wide setting), `category(_:)` returns a `Category` whose
+  (`LibraryLogger.Level`, `off`...`debug`, default `.warning`) lives in a lock-free `Atomic<Int>`
+  per instance (no process-wide setting; reading it never takes a lock), `category(_:)` returns a `Category` whose
   `debug`/`info`/`warning`/`error` log messages public and `url:`/`error:` details private.
   Messages are `@autoclosure`s, so skipped levels never build their strings.
 - `SignpostRecorder` wraps `OSSignposter` (`measure(_:_:)` sync and async, `begin`/`end` for
@@ -133,7 +143,7 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   capping concurrent access (e.g. limiting parallel network requests).
 - `AsyncBroadcaster<Element>` fans one source out to many `AsyncStream`s (`makeStream()`,
   `yield(_:)`, `finish()`, optional latest-value replay). A final class guarded by
-  `OSAllocatedUnfairLock`: streams register synchronously in `makeStream()` and unregister
+  a `Mutex`: streams register synchronously in `makeStream()` and unregister
   synchronously on termination, so an immediately cancelled consumer can't leak.
 - `Debouncer` (actor) coalesces rapid repeated calls into one action after a quiet period.
 - `withRetry(attempts:delay:clock:operation:)` retries a throwing async operation with a fixed delay.
@@ -186,6 +196,10 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 - Sources: `Sources/SwiftCommons/`
 - Test support (separate product): `Sources/SwiftCommonsTestSupport/`
 - Tests: `Tests/SwiftCommonsTests/`
+- DocC catalogs: one `<Module>.docc` per module under `Sources/<Module>/`. `scripts/docs/generate.sh`
+  builds all three into one combined site (`--enable-experimental-combined-documentation`), and CI
+  runs `docc convert --warnings-as-errors --analyze` on each catalog, so a new public symbol's
+  doc comment and any `` ``Symbol`` `` link must resolve within its own module.
 
 ## Consumer Agent Skills
 

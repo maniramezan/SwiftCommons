@@ -71,8 +71,9 @@ include `.defaults`:
 - **Extensions** — safe/defaulted `Array` subscripts, `Optional.ifNil(_:)`, `String` blank/trim
   helpers, the `StringParsable` protocol (`T(parsing:)` with a lenient `Bool` parser) and
   `String(flag:)` boolean-flag helpers, `Bundle` app-version accessors, `UUID` byte/deterministic
-  helpers, `Duration.timeInterval`, `URL` string-literal support, and locale-aware
-  `NumberFormatter`/`FixedWidthInteger` helpers.
+  helpers, `Duration.timeInterval`, `URL` string-literal support, suffix trimming
+  (`trimmingSuffix`), `String.ensuringStarts(with:)`, and locale-aware
+  `NumberFormatter`/`FixedWidthInteger` helpers (including `formatOrdinal`).
 - **Decoding diagnostics** — `DecodingError.debugSummary` (e.g.
   `keyNotFound 'id' at items[2].user`) for logging decode failures without payload values.
 - **Dates & calendars** — `Calendar` date math (start of week/month, inclusive date ranges, month
@@ -82,7 +83,9 @@ include `.defaults`:
 - **Logging** — OSLog `Logger` conveniences for categories, privacy, and context.
 - **Library logging** — `LibraryLogger`, a level-gated OSLog front end whose verbosity a library's
   users control (`setLevel(_:)`), with per-category handles and private URL/error logging.
-- **Formatting** — `DurationFormatter` for compact `m:ss` / `h:mm:ss` durations.
+- **Formatting** — `DurationFormatter` for compact `m:ss` / `h:mm:ss` durations, and
+  `FormatterCache`, the per-thread cache behind the date/number/relative-time formatters, with
+  `MeasurementFormatter.cached(...)` as a ready-made use for any other `Formatter`.
 - **Errors** — `AnySendableError`, a `Hashable` snapshot of any error (type, domain, code,
   descriptions) for storing or comparing errors as values.
 - **State** — a generic `LoadingState` machine (`idle`/`loading`/`loaded`/`failed`) with a
@@ -134,6 +137,8 @@ let resolved = name.ifNil("Anonymous")   // "Anonymous"
 ```swift
 "  hi  ".trimmed        // "hi"
 "   ".nilIfBlank        // nil
+"users".ensuringStarts(with: "/")  // "/users"
+"report.json".trimmingSuffix(".json") // "report"
 
 Bool(parsing: "yes")   // true — also accepts 1/0, on/off, true/false
 Int(parsing: "42")     // 42 — T(parsing:) works for any StringParsable
@@ -151,6 +156,7 @@ UUID().bytes             // [UInt8], canonical byte order
 NumberFormatter.formatDecimal(1234.5, fractionDigits: 2...2) // "1,234.50" in en_US
 NumberFormatter.formatPercent(0.25)                    // "25%" in en_US
 NumberFormatter.formatYear(2024)                      // "2024" (digits follow the locale)
+NumberFormatter.formatOrdinal(3)                      // "3rd" in en_US
 NumberFormatter.formatCurrency(9.99, currencyCode: "USD") // "$9.99"
 ```
 
@@ -163,6 +169,14 @@ let monthLabel = DateFormatter.formatter(template: "yMMMM", calendar: .current)
 // Cached formatters are shared on the calling thread: treat them as read-only
 // and use them synchronously without passing them between tasks or threads.
 let dateString = formatter.string(from: Date())
+
+// Cache any other Formatter the same way (one instance per key per thread, never evicted)
+let measurement = MeasurementFormatter.cached(unitStyle: .short)
+let custom: ByteCountFormatter = FormatterCache.formatter(for: "file-sizes") {
+    let formatter = ByteCountFormatter()
+    formatter.countStyle = .file
+    return formatter
+}
 
 let calendar = Calendar(identifier: .gregorian)
 let monthStart = try calendar.startOfMonth(for: Date())
@@ -401,10 +415,21 @@ npx skills add maniramezan/SwiftCommons --skill swiftcommons-sync
 
 Full API documentation is published with DocC to GitHub Pages.
 
-Generate documentation locally:
+Generate documentation for all three modules locally. `--enable-all-traits` is needed so the
+`CSV` and `SwiftData` APIs are included:
 
 ```bash
-swift package generate-documentation \
+bash scripts/docs/clean.sh
+archive_path="$(bash scripts/docs/generate.sh SwiftCommons)"
+bash scripts/docs/prepare-site.sh "$archive_path"
+bash scripts/docs/redirect-root.sh SwiftCommons
+bash scripts/docs/preview.sh   # serves /tmp/docc-site at http://127.0.0.1:8000
+```
+
+Or build a single module by hand:
+
+```bash
+swift package --enable-all-traits generate-documentation \
   --target SwiftCommons \
   --output-path /tmp/docc
 ```

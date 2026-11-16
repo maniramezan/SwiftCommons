@@ -87,4 +87,35 @@ struct AsyncSemaphoreTests {
         await semaphore.signal()
         #expect(await waiter.value == "acquired")
     }
+
+    /// Records the order in which waiters acquire a permit.
+    private actor AcquisitionLog {
+        private(set) var order: [Int] = []
+        func record(_ index: Int) { order.append(index) }
+    }
+
+    @Test
+    func resumesManyWaitersInArrivalOrder() async {
+        let semaphore = AsyncSemaphore(value: 1)
+        let log = AcquisitionLog()
+        let waiterCount = 500
+        await semaphore.wait()
+
+        var waiters: [Task<Void, Never>] = []
+        for index in 0..<waiterCount {
+            waiters.append(
+                Task {
+                    await semaphore.wait()
+                    await log.record(index)
+                    await semaphore.signal()
+                })
+            // Let each waiter enqueue before the next starts so arrival order is deterministic.
+            while await semaphore.waiterCount <= index { await Task.yield() }
+        }
+
+        await semaphore.signal()
+        for waiter in waiters { await waiter.value }
+
+        #expect(await log.order == Array(0..<waiterCount))
+    }
 }

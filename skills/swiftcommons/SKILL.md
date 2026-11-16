@@ -21,7 +21,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Trim suffixes | `text.trimmingSuffix(".json")`, `text.trimmingSuffix(while: { $0 == "/" })`, or `text.trimmingSuffix(regex)`; mutate with the matching `trimSuffix` overload |
 | Add a missing first character | `text.ensuringStarts(with: "/")` (empty becomes `"/"`; repeated prefixes stay intact) |
 | Unicode letter or number | `character.isAlphanumeric`; combine with `.isASCII` for ASCII-only validation |
-| Parse config text | `Bool(parsing:)` (true/false, 1/0, yes/no, on/off), `Int(parsing:)`, `Double(parsing:)` |
+| Parse config text | `T(parsing:)` for any `StringParsable` type: `Bool(parsing:)` (true/false, 1/0, yes/no, on/off), `Int(parsing:)`, `Double(parsing:)`; conform your own type to `StringParsable` to join in |
 | Log a decode failure | `logger.errorPublic("Decode failed: \(decodingError.debugSummary)")` → `keyNotFound 'id' at items[2].user` |
 | Encode a boolean flag | `String(flag: true)` → `"1"` |
 | Remote/env/plist config | `ConfigValue.environment()`, `ConfigValue.propertyList(_:)`, `.boolValue` / `.intValue` / `.doubleValue` |
@@ -33,7 +33,8 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Localized date | `DateFormatter.formatter(template: "yMMMd", calendar: .current)` or `formatter(dateStyle:timeStyle:)` |
 | "1 hour ago" | `date.relativeDescription()` |
 | Numbers | `NumberFormatter.formatCurrency(_:currencyCode:)`, `.formatDecimal`, `.formatPercent`, `.formatOrdinal` |
-| Any other cached `Formatter` | `FormatterCache.formatter(for: key) { makeFormatter() }` |
+| Measurements ("5 km") | `MeasurementFormatter.cached(unitStyle:unitOptions:locale:)` |
+| Any other cached `Formatter` | `FormatterCache.formatter(for: key) { makeFormatter() }` (one instance per key per thread, never evicted: use a small fixed set of keys) |
 | `m:ss` / `h:mm:ss` | `DurationFormatter.format(seconds:)` |
 | Calendar math | `calendar.startOfMonth(for:)`, `numberOfDays(in:year:)`, `dates(from:through:)`; era/leap-month-safe months via `CalendarArithmetic` + `MonthIdentifier` |
 | Month grid dates | `CalendarArithmetic(calendar: calendar).gridDates(in: month)` → `[Date]?`, padded to complete weeks using `firstWeekday` |
@@ -46,7 +47,7 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Debounce | `await Debouncer(delay: .milliseconds(300)).run { … }` |
 | Retry | `try await withRetry(attempts: 3, delay: .seconds(1)) { … }` |
 | Time out async work | `try await withTimeout(.seconds(10)) { … }`; inject `clock:` for tests |
-| Retry with exponential backoff / only some errors | `withRetry(attempts:backoff: .exponential(baseDelay:maxDelay:jitter:), shouldRetry:operation:)` |
+| Retry with exponential backoff / only some errors | `withRetry(attempts:backoff:clock:shouldRetry:operation:)` with a `RetryBackoff`: `.constant(_)` or `.exponential(baseDelay:multiplier:maxDelay:jitter:jitterSource:)` (capped before jitter); `shouldRetry` returns `false` to rethrow immediately |
 | SwiftData container | `try ModelContainer.make(for: A.self, B.self, inMemory: isPreview)` |
 | Measure hot paths | `SignpostRecorder(subsystem:category:).measure("name") { … }` |
 | Logging inside a library package (user-controlled level) | `LibraryLogger(subsystem:)` + `.category("network")`; users call `setLevel(.debug)` |
@@ -72,6 +73,9 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 
 - **Sequence suffixes trim once.** `trimmingSuffix("/")` removes one trailing slash; `trimmingSuffix(while: { $0 == "/" })` removes all trailing slashes. These return a subsequence, like Swift’s existing `trimmingPrefix` APIs. Use the standard library for prefix trimming.
 
+- **`debugPublic` and friends build the message eagerly.** `Logger.debugPublic(_:)` takes a
+  `String`, so interpolation runs even when debug logs aren't collected. Keep hot-path messages
+  cheap, or use `LibraryLogger`, whose messages are `@autoclosure`s that skipped levels never build.
 - **Cached formatters are shared per thread.** Treat the returned `DateFormatter` /
   `NumberFormatter` as read-only. Never set `dateFormat`, `locale`, etc. on it, and don't pass it
   across tasks or threads.
