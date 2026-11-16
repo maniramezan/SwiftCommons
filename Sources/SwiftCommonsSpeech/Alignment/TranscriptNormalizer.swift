@@ -7,9 +7,7 @@ enum TranscriptNormalizer {
     /// Whitespace, hyphens, dashes, and slashes separate words. Punctuation at the edges of a word
     /// is dropped; apostrophes inside a word (`don't`, `o'clock`) are kept and straightened.
     static func words(in text: String) -> [String] {
-        let separators = CharacterSet.whitespacesAndNewlines
-            .union(CharacterSet(charactersIn: "-‐‑‒–—/"))
-        return text.components(separatedBy: separators).compactMap { raw in
+        text.components(separatedBy: separators).compactMap { raw in
             let straightened = raw.replacing("’", with: "'").replacing("‘", with: "'")
             let trimmed = straightened.trimmingCharacters(in: edgePunctuation)
             return trimmed.isEmpty ? nil : trimmed
@@ -20,6 +18,9 @@ enum TranscriptNormalizer {
     static func key(for word: String, locale: Locale) -> String {
         word.replacing("’", with: "'").lowercased(with: locale)
     }
+
+    private static let separators = CharacterSet.whitespacesAndNewlines
+        .union(CharacterSet(charactersIn: "-‐‑‒–—/"))
 
     private static let edgePunctuation = CharacterSet.punctuationCharacters
         .union(.symbols)
@@ -47,14 +48,32 @@ enum EditDistance {
     static func operations(from reference: [String], to heard: [String]) -> [Operation] {
         let rows = reference.count
         let columns = heard.count
-        var cost = Array(repeating: Array(repeating: 0, count: columns + 1), count: rows + 1)
-        for r in 0...rows { cost[r][0] = r }
-        for h in 0...columns { cost[0][h] = h }
+        let stride = columns + 1
+
+        // Intern each distinct word to an integer so the DP loop compares Ints, not Strings.
+        var ids: [String: Int] = [:]
+        func id(for word: String) -> Int {
+            if let existing = ids[word] { return existing }
+            let next = ids.count
+            ids[word] = next
+            return next
+        }
+        let referenceIDs = reference.map(id(for:))
+        let heardIDs = heard.map(id(for:))
+
+        var cost = [Int](repeating: 0, count: (rows + 1) * stride)
+        for r in 0...rows { cost[r * stride] = r }
+        for h in 0...columns { cost[h] = h }
         if rows > 0 && columns > 0 {
             for r in 1...rows {
                 for h in 1...columns {
-                    let diagonal = cost[r - 1][h - 1] + (reference[r - 1] == heard[h - 1] ? 0 : 1)
-                    cost[r][h] = min(diagonal, cost[r - 1][h] + 1, cost[r][h - 1] + 1)
+                    let diagonal =
+                        cost[(r - 1) * stride + h - 1]
+                        + (referenceIDs[r - 1] == heardIDs[h - 1] ? 0 : 1)
+                    cost[r * stride + h] = min(
+                        diagonal,
+                        cost[(r - 1) * stride + h] + 1,
+                        cost[r * stride + h - 1] + 1)
                 }
             }
         }
@@ -64,15 +83,15 @@ enum EditDistance {
         var h = columns
         while r > 0 || h > 0 {
             if r > 0 && h > 0 {
-                let same = reference[r - 1] == heard[h - 1]
-                if cost[r][h] == cost[r - 1][h - 1] + (same ? 0 : 1) {
+                let same = referenceIDs[r - 1] == heardIDs[h - 1]
+                if cost[r * stride + h] == cost[(r - 1) * stride + h - 1] + (same ? 0 : 1) {
                     result.append(same ? .keep(r - 1, h - 1) : .substitute(r - 1, h - 1))
                     r -= 1
                     h -= 1
                     continue
                 }
             }
-            if r > 0 && cost[r][h] == cost[r - 1][h] + 1 {
+            if r > 0 && cost[r * stride + h] == cost[(r - 1) * stride + h] + 1 {
                 result.append(.delete(r - 1))
                 r -= 1
             } else {

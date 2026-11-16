@@ -21,9 +21,14 @@ public enum DurationFormatter {
         let sign = seconds < 0 ? "-" : ""
 
         return if hours > 0 {
-            "\(sign)\(hours):\(String(format: "%02llu", minutes)):\(String(format: "%02llu", remainingSeconds))"
+            "\(sign)\(hours):\(twoDigits(minutes)):\(twoDigits(remainingSeconds))"
         } else {
-            "\(sign)\(minutes):\(String(format: "%02llu", remainingSeconds))"
+            "\(sign)\(minutes):\(twoDigits(remainingSeconds))"
         }
+    }
+
+    /// Zero-pads a value in `0...59` to two digits without going through `String(format:)`.
+    private static func twoDigits(_ value: UInt) -> String {
+        value < 10 ? "0\(value)" : "\(value)"
     }
 }

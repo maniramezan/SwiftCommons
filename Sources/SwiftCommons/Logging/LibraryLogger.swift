@@ -139,7 +139,8 @@ public final class LibraryLogger: Sendable {
     /// The OSLog subsystem every category logs under.
     public let subsystem: String
 
-    private let threshold: Mutex<Level>
+    /// The level's raw value, read lock-free on every log call, including skipped ones.
+    private let threshold: Atomic<Int>
 
     /// Called with the level and category of every message that passes the level gate. Tests
     /// only; OSLog output can't be read back.
@@ -161,20 +162,20 @@ public final class LibraryLogger: Sendable {
         emissionObserver: (@Sendable (Level, String) -> Void)?
     ) {
         self.subsystem = subsystem
-        self.threshold = Mutex(defaultLevel)
+        self.threshold = Atomic(defaultLevel.rawValue)
         self.emissionObserver = emissionObserver
     }
 
     /// The current level. Messages less severe than this are skipped.
     public var level: Level {
-        threshold.withLock { $0 }
+        Level(rawValue: threshold.load(ordering: .relaxed)) ?? .off
     }
 
     /// Changes the level for every category of this logger. Safe to call from any thread.
     ///
     /// - Parameter newLevel: The new level.
     public func setLevel(_ newLevel: Level) {
-        threshold.withLock { $0 = newLevel }
+        threshold.store(newLevel.rawValue, ordering: .relaxed)
     }
 
     /// Whether a message at `messageLevel` would currently be emitted.

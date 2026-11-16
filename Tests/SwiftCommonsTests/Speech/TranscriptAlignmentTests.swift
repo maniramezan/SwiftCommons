@@ -133,6 +133,23 @@ struct EditDistanceTests {
                 .keep(0, 0), .delete(1), .keep(2, 1),
             ])
     }
+
+    @Test
+    func alignsRepeatedWordsOnTheCheapestPath() {
+        #expect(
+            EditDistance.operations(
+                from: ["the", "cat", "the", "dog"], to: ["the", "dog", "the", "dog"]) == [
+                    .keep(0, 0), .substitute(1, 1), .keep(2, 2), .keep(3, 3),
+                ])
+    }
+
+    @Test
+    func alignsAWordInsertedBetweenRepeatedWords() {
+        #expect(
+            EditDistance.operations(from: ["a", "a"], to: ["a", "b", "a"]) == [
+                .keep(0, 0), .insert(1), .keep(1, 2),
+            ])
+    }
 }
 
 @Suite("TranscriptNormalizer")

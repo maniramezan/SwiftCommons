@@ -16,6 +16,7 @@ struct StringExtensionsTests {
         #expect("".isBlank)
         #expect("   ".isBlank)
         #expect("\n\t".isBlank)
+        #expect("\u{00A0}\u{2003}\r\n".isBlank)
         #expect(!"hi".isBlank)
         #expect(!"  hi  ".isBlank)
     }
