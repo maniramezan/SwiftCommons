@@ -161,7 +161,10 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   one task; `cancel(_:)`/`cancelAll()` detach the flight, and a flight-ID check turns a cancelled
   flight's late result into `CancellationError`. Nothing is cached after a flight finishes.
 - `CSV` provides lightweight CSV parsing/serialization; gated behind the `CSV` package trait to
-  keep it opt-in.
+  keep it opt-in. `parseRows(_:delimiter:)` scans UTF-8 bytes (so the delimiter is an ASCII
+  `CSV.Delimiter`: `.comma`, `.semicolon`, `.tab`, `.pipe`, or `Delimiter(_:)`); only `\n`, `\r`, and
+  `\r\n` end a row, and a leading BOM is skipped. `parseRecords`/`serializeRecords` are the
+  header-keyed (`[[String: String]]`) forms.
 - `ModelContainer.make(for:inMemory:)` is a thin bootstrap over `ModelContainer.init(for:configurations:)`
   for the common single-store, persistent-vs-in-memory case (apps, previews, and tests). An
   array-taking overload (`make(for: [any PersistentModel.Type], inMemory:)`) exists for callers that

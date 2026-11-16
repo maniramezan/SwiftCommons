@@ -73,8 +73,8 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   throwing ``TimeoutError`` on expiration and awaiting cancellation cleanup of the losing task.
 - **App versions** — ``AppVersion`` parses and compares numeric marketing versions, defaulting
   omitted components to zero and ignoring prerelease and build suffixes.
-- **CSV** — lightweight CSV parsing/serialization (``CSV``), gated behind the `CSV`
-  package trait.
+- **CSV** — lightweight CSV parsing/serialization (``CSV``) with custom delimiters
+  (``CSV/Delimiter``) and header-keyed records, gated behind the `CSV` package trait.
 - **Persistence** — `ModelContainer.make(for:inMemory:)`, a thin SwiftData
   bootstrap helper for apps, previews, and tests.
   Behind the default `SwiftData` package trait.
