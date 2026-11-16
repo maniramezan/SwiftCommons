@@ -355,6 +355,120 @@ struct SyncEngineTests {
         #expect(callCount.value == 1)
     }
 
+    // MARK: Batch lookup
+
+    /// Rebuilds `base` with a counting per-row lookup and a counting batch lookup.
+    private func batchAdapter(
+        from base: SyncResourceAdapter<SyncItem, ItemUpsert, ItemDelete, ItemChange>,
+        rowLookups: Box<Int>,
+        batchLookups: Box<Int>
+    ) -> SyncResourceAdapter<SyncItem, ItemUpsert, ItemDelete, ItemChange> {
+        SyncResourceAdapter(
+            resourceName: base.resourceName,
+            fetchPending: base.fetchPending,
+            businessKey: base.businessKey,
+            makeUpserts: base.makeUpserts,
+            makeDeletes: base.makeDeletes,
+            call: base.call,
+            findExisting: { change, context in
+                rowLookups.value += 1
+                return try base.findExisting(change, context)
+            },
+            changeKey: base.changeKey,
+            isChangeDeleted: base.isChangeDeleted,
+            upsertFromChange: base.upsertFromChange,
+            fetchActive: base.fetchActive,
+            purgeSynced: base.purgeSynced,
+            findExistingBatch: { changes, context in
+                batchLookups.value += 1
+                let keys = Set(changes.map { $0.key.lowercased() })
+                var found: [String: SyncItem] = [:]
+                for item in try context.fetch(FetchDescriptor<SyncItem>())
+                where keys.contains(item.key.lowercased()) {
+                    found[item.key.lowercased()] = item
+                }
+                return found
+            }
+        )
+    }
+
+    @Test func batchLookupReplacesPerRowLookupsAndStillAppliesChanges() async throws {
+        let container = try SyncFixtures.makeContainer()
+        let context = container.mainContext
+        context.insert(SyncItem(key: "alpha", title: "Old", serverId: 1, syncState: .synced))
+        try context.save()
+        let base = SyncFixtures.adapter { _ in
+            SyncFixtures.response(
+                serverChanges: [
+                    ItemChange(key: "alpha", title: "New", serverId: 1, isDeleted: false),
+                    ItemChange(key: "beta", title: "Beta", serverId: 2, isDeleted: false),
+                    ItemChange(key: "gamma", title: "Gamma", serverId: 3, isDeleted: false),
+                ],
+                cursor: "c1"
+            )
+        }
+        let rowLookups = Box<Int>(0)
+        let batchLookups = Box<Int>(0)
+        let adapter = batchAdapter(from: base, rowLookups: rowLookups, batchLookups: batchLookups)
+
+        try await SyncEngine(modelContainer: container).sync(adapter)
+
+        #expect(batchLookups.value == 1)
+        #expect(rowLookups.value == 0)
+        let items = try context.fetch(FetchDescriptor<SyncItem>())
+        #expect(items.count == 3)
+        #expect(items.first { $0.key == "alpha" }?.title == "New")
+    }
+
+    @Test func batchLookupKeepsThePendingGuard() async throws {
+        let container = try SyncFixtures.makeContainer()
+        let context = container.mainContext
+        context.insert(
+            SyncItem(key: "alpha", title: "Local edit", serverId: 1, syncState: .pendingUpdate))
+        try context.save()
+        let base = SyncFixtures.adapter { request in
+            // The push response acks nothing, so the row stays pending.
+            if request.since == nil {
+                return SyncFixtures.response(
+                    serverChanges: [
+                        ItemChange(key: "alpha", title: "Server", serverId: 1, isDeleted: false)
+                    ],
+                    cursor: "c1"
+                )
+            }
+            return SyncFixtures.response(cursor: "c1")
+        }
+        let adapter = batchAdapter(
+            from: base, rowLookups: Box<Int>(0), batchLookups: Box<Int>(0))
+
+        try await SyncEngine(modelContainer: container).sync(adapter)
+
+        let item = try #require(try context.fetch(FetchDescriptor<SyncItem>()).first)
+        #expect(item.title == "Local edit")
+    }
+
+    @Test func batchLookupFallsBackToRowLookupForARepeatedKeyOnOnePage() async throws {
+        let container = try SyncFixtures.makeContainer()
+        let base = SyncFixtures.adapter { _ in
+            SyncFixtures.response(
+                serverChanges: [
+                    ItemChange(key: "alpha", title: "First", serverId: 1, isDeleted: false),
+                    ItemChange(key: "alpha", title: "Second", serverId: 1, isDeleted: false),
+                ],
+                cursor: "c1"
+            )
+        }
+        let rowLookups = Box<Int>(0)
+        let adapter = batchAdapter(from: base, rowLookups: rowLookups, batchLookups: Box<Int>(0))
+
+        try await SyncEngine(modelContainer: container).sync(adapter)
+
+        let items = try container.mainContext.fetch(FetchDescriptor<SyncItem>())
+        #expect(items.count == 1)
+        #expect(items.first?.title == "Second")
+        #expect(rowLookups.value == 1)
+    }
+
     // MARK: Full resync
 
     @Test func fullResyncPurgesSyncedRowsAndResetsCursor() async throws {

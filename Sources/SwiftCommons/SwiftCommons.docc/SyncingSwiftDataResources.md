@@ -58,6 +58,7 @@ stores don't support. Keep it in a local store.
 | `makeUpserts` / `makeDeletes` | Wire payloads for pending rows (split on `isTombstoned`). |
 | `call` | The transport: send a ``SyncRequestDTO``, return a ``SyncResponseDTO``. |
 | `findExisting` | The local row a server change refers to. |
+| `findExistingBatch` | Optional. Finds the rows for a whole page in one fetch, keyed by `changeKey`; the engine then skips the per-change `findExisting` calls. |
 | `changeKey` / `isChangeDeleted` | Key and deletion flag of a server change. |
 | `upsertFromChange` | Apply a change to the existing row, or insert a new one, and mark it `.synced`. |
 | `fetchActive` | Every non-tombstoned row, for full-snapshot reconciliation. |

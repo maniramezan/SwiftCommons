@@ -89,6 +89,9 @@ Rules:
 - `businessKey`, the server's `applied[].key`, and `changeKey` must produce the **same** string
   for the same row. Normalize case and whitespace in all three.
 - `upsertFromChange` must leave the row `.synced`.
+- For pages of many changes, pass `findExistingBatch: { changes, context in … }` (a `[String: Note]`
+  keyed by `changeKey`, from one fetch) so the engine doesn't fetch once per change. `findExisting`
+  is still required and is used for keyless or repeated-key changes.
 - `purgeSynced` deletes only `.synced` rows. Pending rows must survive a full resync.
 
 ## 5. Run
