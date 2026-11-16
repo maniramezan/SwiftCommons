@@ -166,3 +166,4 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 - ``SyncRequestDTO``
 - ``SyncResponseDTO``
 - ``SyncAppliedDTO``
+- ``SyncResponseMode``

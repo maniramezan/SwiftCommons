@@ -253,7 +253,7 @@ extension SyncEngine {
             // Ack guard: skip if the row was edited mid-flight; it re-pushes next sync.
             guard sentVersions[status.key] == model.localUpdatedAt else { continue }
             apply(status, to: model)
-            if status.status == "blocked" || status.status == "rejected" {
+            if status.statusKind == .blocked || status.statusKind == .rejected {
                 await track(
                     .itemBlocked(
                         resource: resource, status: status.status, reason: status.reason)
@@ -267,16 +267,16 @@ extension SyncEngine {
         if let updatedAt = status.updatedAt {
             model.updatedAt = Date(timeIntervalSince1970: updatedAt)
         }
-        switch status.status {
-        case "blocked", "rejected":
+        switch status.statusKind {
+        case .blocked, .rejected:
             model.syncState = .blocked
-        case "deleted":
+        case .deleted:
             model.syncState = .synced
             model.isTombstoned = true
-        case "created", "updated", "noop":
+        case .created, .updated, .noop:
             model.syncState = .synced
             model.isTombstoned = false
-        default:
+        case .unknown:
             break
         }
     }
@@ -307,7 +307,7 @@ extension SyncEngine {
             if let existing, existing.syncState != .synced { continue }
             adapter.upsertFromChange(change, existing, context)
         }
-        return response.mode == "full"
+        return response.modeKind == .full
     }
 
     private func reconcileFullSnapshot<Model, Upsert, Delete, Change>(

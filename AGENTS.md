@@ -167,6 +167,10 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   array-taking overload (`make(for: [any PersistentModel.Type], inMemory:)`) exists for callers that
   only know the model types dynamically.
 - `SyncEngine` (`@MainActor`) drives offline sync for SwiftData `@Model` rows conforming to `SyncableModel`; each resource plugs in via a `SyncResourceAdapter` (struct of closures) and the engine owns the contract (ack guard, pending guard, full-snapshot reconciliation, pagination drain, full-resync recovery).
+- `SyncAppliedDTO.status` and `SyncResponseDTO.mode` stay raw strings for wire compatibility; use
+  `statusKind` (`SyncAppliedDTO.Status`) and `modeKind` (`SyncResponseMode`) to branch on them. Both
+  decode every string, keeping unrecognized ones as `.unknown(String)`, so a server adding an outcome
+  never breaks decoding.
 - `SyncableModel` requires `isTombstoned`, NOT `isDeleted`: on a SwiftData `@Model` a stored `isDeleted` is shadowed by `PersistentModel.isDeleted` (context hard-delete state), so writes don't read back on the live object. Never name a soft-delete flag `isDeleted` on a `@Model`.
 - `SwiftCommonsTestSupport` (separate product) provides: `ManualClock` (fake, manually
   advanced `DelayClock` — use bounded `waitForSleepCount` before calling `advance(by:)` to avoid racing
