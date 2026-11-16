@@ -11,7 +11,7 @@ import Foundation
 ///     let requests = Box<[SyncRequestDTO<ItemUpsert, ItemDelete>]>([])
 ///     let adapter = SyncResourceAdapter(
 ///         // ...
-///         call: { request in
+///         call: { @MainActor request in
 ///             requests.value.append(request)
 ///             return .fixture(cursor: "cursor-1")
 ///         },

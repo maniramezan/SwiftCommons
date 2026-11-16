@@ -1,13 +1,22 @@
 ---
 name: swiftcommons-sync
-description: Use when adding, changing, or debugging offline sync of a SwiftData model with SwiftCommons' SyncEngine — conforming a @Model to SyncableModel, writing a SyncResourceAdapter, marking local edits as pending, wiring the transport, or testing a sync resource.
+description: Use when adding, changing, or debugging offline sync with SwiftCommons' SyncEngine — conforming a SwiftData @Model (or a GRDB/SQLite row struct) to SyncableModel, writing a SyncResourceAdapter, choosing or implementing a SyncStore, marking local edits as pending, wiring the transport, migrating from the @MainActor engine (0.17 and earlier), or testing a sync resource.
 ---
 
 # SwiftCommons sync: adding a resource
 
-`SyncEngine` (`@MainActor`) owns the whole sync contract: pending guard, ack guard, pagination,
+`SyncEngine<Store>` owns the whole sync contract: pending guard, ack guard, pagination,
 full-snapshot reconciliation, and full-resync recovery. Adding a resource means writing **one**
 `SyncResourceAdapter`. Don't re-implement any of that logic in the adapter or the app.
+
+The engine isn't bound to the main actor. Local reads and writes run inside the `SyncStore`'s
+transactions, wherever the store runs them; each page's rows and cursor commit together.
+
+| Store | Where it runs | Use |
+|---|---|---|
+| `SwiftDataSyncStore` (via `SyncEngine(modelContainer:)`) | main actor, `mainContext` | SwiftUI views see each page as it lands |
+| `SwiftDataBackgroundSyncStore(modelContainer:)` | its own `@ModelActor` context | large syncs off the main thread; a failed page rolls back |
+| your own `SyncStore` | wherever you choose | GRDB, SQLite, Core Data. See the *Syncing Custom Stores* DocC article |
 
 ## 1. Model
 
@@ -55,10 +64,9 @@ let container = try ModelContainer.make(for: Note.self, SyncMetadata.self)
 ## 4. Adapter
 
 ```swift
-@MainActor
 func notesAdapter(
-    call: @escaping (SyncRequestDTO<NoteUpsert, NoteDelete>) async throws -> SyncResponseDTO<NoteChange>
-) -> SyncResourceAdapter<Note, NoteUpsert, NoteDelete, NoteChange> {
+    call: @escaping @Sendable (SyncRequestDTO<NoteUpsert, NoteDelete>) async throws -> SyncResponseDTO<NoteChange>
+) -> SwiftDataSyncAdapter<Note, NoteUpsert, NoteDelete, NoteChange> {
     SyncResourceAdapter(
         resourceName: "notes",                                   // also keys SyncMetadata
         fetchPending: { try $0.fetch(FetchDescriptor<Note>(predicate: #Predicate { $0.syncState != .synced })) },
@@ -86,6 +94,12 @@ func notesAdapter(
 ```
 
 Rules:
+- Every closure is `@Sendable`. All of them except `call` run inside the store's transaction, so
+  don't touch main-actor state from them. `call` runs outside it; when it needs main-actor state,
+  write it as `{ @MainActor request in … }`.
+- SwiftData adapters take no `persist:`. For value-type rows (GRDB, SQLite), use the general
+  `SyncResourceAdapter<…, Database>` init and pass `persist: { row, db in try row.save(db) }`, or
+  the engine's ack and tombstone writes are lost. `upsertFromChange` writes its own row.
 - `businessKey`, the server's `applied[].key`, and `changeKey` must produce the **same** string
   for the same row. Normalize case and whitespace in all three.
 - `upsertFromChange` must leave the row `.synced`.
@@ -106,7 +120,22 @@ try await engine.syncAll([AnySyncResource(notes), AnySyncResource(tags)])
 - Engines that must not overlap should share one `AsyncLock` (the `lock:` init parameter).
 - `syncAll` isolates resources: it runs every resource, then rethrows the first error.
 - `.blocked` rows (the server returned `blocked` / `rejected`) never receive server changes until
-  the app resolves them. Surface `SyncEvent.itemBlocked` to the user.
+  the app resolves them. Surface `SyncEvent.itemBlocked` to the user. It arrives after the page that
+  carried the ack is saved.
+- `AnySyncResource` is generic over the store. Type inference handles `SyncEngine(modelContainer:)`,
+  but for a background engine pass the array straight to `syncAll`, or spell
+  `AnySyncResource<SwiftDataBackgroundSyncStore>(adapter)`.
+
+## Migrating from 0.17 (`@MainActor` engine)
+
+- `SyncResourceAdapter<A, B, C, D>` → `SwiftDataSyncAdapter<A, B, C, D>`; a stored
+  `let engine: SyncEngine` → `SwiftDataSyncEngine`. `SyncEngine(modelContainer:)` and the adapter
+  initializer without `persist:` are unchanged.
+- Adapter closures are now `@Sendable`. A `call:` that captures main-actor state becomes
+  `{ @MainActor request in … }`, or a call to a `@MainActor` async function.
+- `upsertFromChange` may now throw. Throwing fails the pass and leaves the cursor unchanged.
+- `SyncableModel` no longer requires `AnyObject` and now refines `SendableMetatype`. `@Model`
+  classes conform unchanged, including in modules with default `MainActor` isolation.
 
 ## Wire contract (server side)
 
@@ -133,4 +162,5 @@ try await SyncEngine(modelContainer: container).sync(adapter)
 ```
 
 Cover at least: create ack sets `serverId`; edit during flight is re-pushed; a pending row isn't
-overwritten by a server change; a full snapshot tombstones absent rows.
+overwritten by a server change; a full snapshot tombstones absent rows. For a custom store, also
+check that a throwing page rolls back its rows, acks, and cursor together.

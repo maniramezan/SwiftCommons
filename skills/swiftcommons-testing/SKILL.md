@@ -92,8 +92,11 @@ let response = SyncResponseDTO<ItemChange>.fixture(
 let ack = SyncAppliedDTO.fixture(key: "item-1", id: 42, status: "created")
 ```
 
-Mark sync tests `@MainActor`, because `SyncEngine` and `SyncResourceAdapter` are main-actor
-isolated. The `swiftcommons-sync` skill lists which behaviors to cover.
+`SyncEngine` isn't main-actor isolated, but marking sync tests `@MainActor` lets them read
+`mainContext` rows and `Box` captures directly. Write a `call:` that mutates a `Box` as
+`{ @MainActor request in … }`, since adapter closures are `@Sendable`. To test off-main sync, run the
+engine over `SwiftDataBackgroundSyncStore(modelContainer:)` and assert from a fresh
+`ModelContext(container)`. The `swiftcommons-sync` skill lists which behaviors to cover.
 
 ## Conventions
 

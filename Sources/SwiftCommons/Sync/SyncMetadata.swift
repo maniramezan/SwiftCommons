@@ -2,7 +2,10 @@
 import Foundation
 import SwiftData
 
-/// Per-resource cursor and server-config cache for the ``SyncEngine``.
+/// Per-resource cursor and server-config cache for the ``SyncEngine``'s SwiftData stores.
+///
+/// ``SwiftDataSyncStore`` and ``SwiftDataBackgroundSyncStore`` keep each resource's
+/// ``SyncCheckpoint`` here, so the container's schema must include this model.
 ///
 /// One row is stored per resource name. The engine keeps the delta ``cursor``
 /// here between passes, and stashes any server-supplied passthrough values in

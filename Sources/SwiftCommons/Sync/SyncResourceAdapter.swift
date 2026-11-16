@@ -1,6 +1,4 @@
-#if SwiftData
 import Foundation
-import SwiftData
 
 /// Resource-specific glue for the generic loop in ``SyncEngine``.
 ///
@@ -11,35 +9,43 @@ import SwiftData
 /// the resource specifics: how to fetch and key local rows, how to build the
 /// wire payloads, how to call the transport, and how to apply server changes.
 ///
-/// - `Model`: the local ``SyncableModel`` type.
+/// - `Model`: the local ``SyncableModel`` type (a class or a value type).
 /// - `Upsert`/`Delete`: the app's wire shapes for pushed changes.
 /// - `Change`: the app's wire shape for a server-side change.
-@MainActor
+/// - `Context`: the ``SyncStore/Context`` the row closures read and write through.
+///
+/// Every closure except ``call`` runs inside one of the store's transactions, wherever the
+/// store runs it, so they must not touch state isolated to another actor. ``call`` runs outside
+/// any transaction; to reach main-actor state from it, write it as
+/// `{ @MainActor request in … }`.
 public struct SyncResourceAdapter<
     Model: SyncableModel,
     Upsert: Encodable & Sendable,
     Delete: Encodable & Sendable,
-    Change: Decodable & Sendable
-> {
+    Change: Decodable & Sendable,
+    Context
+>: Sendable {
     /// Creates an adapter from its resource-specific closures.
     ///
     /// Each closure parameter is stored in the property of the same name; the optional
     /// `findExistingBatch` defaults to `nil`.
     public init(
         resourceName: String,
-        fetchPending: @escaping (ModelContext) throws -> [Model],
-        businessKey: @escaping (Model) -> String,
-        makeUpserts: @escaping ([Model]) -> [Upsert],
-        makeDeletes: @escaping ([Model]) -> [Delete],
+        fetchPending: @escaping @Sendable (Context) throws -> [Model],
+        businessKey: @escaping @Sendable (Model) -> String,
+        makeUpserts: @escaping @Sendable ([Model]) -> [Upsert],
+        makeDeletes: @escaping @Sendable ([Model]) -> [Delete],
         call:
-            @escaping (SyncRequestDTO<Upsert, Delete>) async throws -> SyncResponseDTO<Change>,
-        findExisting: @escaping (Change, ModelContext) throws -> Model?,
-        changeKey: @escaping (Change) -> String?,
-        isChangeDeleted: @escaping (Change) -> Bool,
-        upsertFromChange: @escaping (Change, Model?, ModelContext) -> Void,
-        fetchActive: @escaping (ModelContext) throws -> [Model],
-        purgeSynced: @escaping (ModelContext) throws -> Void,
-        findExistingBatch: (([Change], ModelContext) throws -> [String: Model])? = nil
+            @escaping @Sendable (SyncRequestDTO<Upsert, Delete>) async throws ->
+            SyncResponseDTO<Change>,
+        findExisting: @escaping @Sendable (Change, Context) throws -> Model?,
+        changeKey: @escaping @Sendable (Change) -> String?,
+        isChangeDeleted: @escaping @Sendable (Change) -> Bool,
+        upsertFromChange: @escaping @Sendable (Change, Model?, Context) throws -> Void,
+        fetchActive: @escaping @Sendable (Context) throws -> [Model],
+        purgeSynced: @escaping @Sendable (Context) throws -> Void,
+        persist: @escaping @Sendable (Model, Context) throws -> Void,
+        findExistingBatch: (@Sendable ([Change], Context) throws -> [String: Model])? = nil
     ) {
         self.resourceName = resourceName
         self.fetchPending = fetchPending
@@ -53,23 +59,27 @@ public struct SyncResourceAdapter<
         self.upsertFromChange = upsertFromChange
         self.fetchActive = fetchActive
         self.purgeSynced = purgeSynced
+        self.persist = persist
         self.findExistingBatch = findExistingBatch
     }
 
-    /// Stable identifier for the resource; also keys its ``SyncMetadata`` row.
+    /// Stable identifier for the resource; also keys its ``SyncCheckpoint``.
     public let resourceName: String
     /// Fetches rows with un-pushed local changes.
-    public let fetchPending: (ModelContext) throws -> [Model]
+    public let fetchPending: @Sendable (Context) throws -> [Model]
     /// Canonical business key; MUST match the server's `applied[].key` and ``changeKey``.
-    public let businessKey: (Model) -> String
+    public let businessKey: @Sendable (Model) -> String
     /// Builds the upsert payloads for the pending rows.
-    public let makeUpserts: ([Model]) -> [Upsert]
+    public let makeUpserts: @Sendable ([Model]) -> [Upsert]
     /// Builds the delete payloads for the pending rows.
-    public let makeDeletes: ([Model]) -> [Delete]
+    public let makeDeletes: @Sendable ([Model]) -> [Delete]
     /// Sends a request and returns the server response (the transport seam).
-    public let call: (SyncRequestDTO<Upsert, Delete>) async throws -> SyncResponseDTO<Change>
+    ///
+    /// Runs outside any store transaction.
+    public let call:
+        @Sendable (SyncRequestDTO<Upsert, Delete>) async throws -> SyncResponseDTO<Change>
     /// Finds the local row a server change refers to, if any.
-    public let findExisting: (Change, ModelContext) throws -> Model?
+    public let findExisting: @Sendable (Change, Context) throws -> Model?
     /// Finds the local rows for a whole page of server changes in one fetch.
     ///
     /// When set, the engine calls it once per page instead of calling ``findExisting`` once per
@@ -77,16 +87,23 @@ public struct SyncResourceAdapter<
     /// is keyed by ``changeKey``; changes without a key, and changes whose key already appeared
     /// earlier on the same page, still use ``findExisting`` so rows inserted mid-page are found.
     /// Leave it `nil` to look rows up one at a time.
-    public let findExistingBatch: (([Change], ModelContext) throws -> [String: Model])?
+    public let findExistingBatch: (@Sendable ([Change], Context) throws -> [String: Model])?
     /// Active-row key for a change, or `nil` if the change can't contribute one.
-    public let changeKey: (Change) -> String?
+    public let changeKey: @Sendable (Change) -> String?
     /// Whether a server change represents a deletion.
-    public let isChangeDeleted: (Change) -> Bool
-    /// Applies a server change onto the existing row (or inserts a new one).
-    public let upsertFromChange: (Change, Model?, ModelContext) -> Void
+    public let isChangeDeleted: @Sendable (Change) -> Bool
+    /// Applies a server change onto the existing row (or inserts a new one) and writes it.
+    ///
+    /// Throwing rolls back the whole page, including its checkpoint.
+    public let upsertFromChange: @Sendable (Change, Model?, Context) throws -> Void
     /// Fetches every non-tombstoned row, for full-snapshot reconciliation.
-    public let fetchActive: (ModelContext) throws -> [Model]
+    public let fetchActive: @Sendable (Context) throws -> [Model]
     /// Deletes synced rows before a full resync.
-    public let purgeSynced: (ModelContext) throws -> Void
+    public let purgeSynced: @Sendable (Context) throws -> Void
+    /// Writes back a row the engine changed — an applied acknowledgement or a reconciliation
+    /// tombstone.
+    ///
+    /// SQL stores update the row here. For live-object stores such as SwiftData the engine's
+    /// changes already land on the managed object, so this is a no-op.
+    public let persist: @Sendable (Model, Context) throws -> Void
 }
-#endif

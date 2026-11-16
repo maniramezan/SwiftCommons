@@ -12,8 +12,15 @@ import Foundation
 ///
 /// A conforming type typically stores these fields directly (for example, a
 /// SwiftData `@Model` class), so conformance can often be declared with an empty
-/// extension.
-public protocol SyncableModel: AnyObject {
+/// extension. Value types work too: a SQL store's row `struct` can conform, and
+/// the engine writes engine-made changes back through the adapter's
+/// ``SyncResourceAdapter/persist`` closure.
+///
+/// The engine uses this conformance inside the store's transaction, which may run
+/// off the main actor, so the protocol refines `SendableMetatype`: a conformance
+/// can't be isolated to an actor, and modules built with default `MainActor`
+/// isolation get a nonisolated conformance without extra annotations.
+public protocol SyncableModel: SendableMetatype {
     /// Server primary key once the row has been accepted by the backend.
     var serverId: Int? { get set }
     /// Last server `updatedAt` observed for this row.

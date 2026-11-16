@@ -359,10 +359,10 @@ struct SyncEngineTests {
 
     /// Rebuilds `base` with a counting per-row lookup and a counting batch lookup.
     private func batchAdapter(
-        from base: SyncResourceAdapter<SyncItem, ItemUpsert, ItemDelete, ItemChange>,
+        from base: SwiftDataSyncAdapter<SyncItem, ItemUpsert, ItemDelete, ItemChange>,
         rowLookups: Box<Int>,
         batchLookups: Box<Int>
-    ) -> SyncResourceAdapter<SyncItem, ItemUpsert, ItemDelete, ItemChange> {
+    ) -> SwiftDataSyncAdapter<SyncItem, ItemUpsert, ItemDelete, ItemChange> {
         SyncResourceAdapter(
             resourceName: base.resourceName,
             fetchPending: base.fetchPending,
@@ -371,7 +371,8 @@ struct SyncEngineTests {
             makeDeletes: base.makeDeletes,
             call: base.call,
             findExisting: { change, context in
-                rowLookups.value += 1
+                // The main-context store runs transactions on the main actor.
+                MainActor.assumeIsolated { rowLookups.value += 1 }
                 return try base.findExisting(change, context)
             },
             changeKey: base.changeKey,
@@ -380,7 +381,7 @@ struct SyncEngineTests {
             fetchActive: base.fetchActive,
             purgeSynced: base.purgeSynced,
             findExistingBatch: { changes, context in
-                batchLookups.value += 1
+                MainActor.assumeIsolated { batchLookups.value += 1 }
                 let keys = Set(changes.map { $0.key.lowercased() })
                 var found: [String: SyncItem] = [:]
                 for item in try context.fetch(FetchDescriptor<SyncItem>())
@@ -718,7 +719,7 @@ struct SyncEngineTests {
         let order = Box<[String]>([])
         let lock = AsyncLock()
 
-        func adapter(_ tag: String) -> SyncResourceAdapter<
+        func adapter(_ tag: String) -> SwiftDataSyncAdapter<
             SyncItem, ItemUpsert, ItemDelete, ItemChange
         > {
             SyncFixtures.adapter(resourceName: tag) { _ in
