@@ -57,4 +57,27 @@ struct FIFOQueueTests {
         #expect(queue.count == 1)
         #expect(queue.dequeue() == "second")
     }
+
+    @Test
+    func removeFirstWhereTakesAMatchingElementAndKeepsTheRestInOrder() {
+        var queue = FIFOQueue<Int>()
+        for value in 0..<5 { queue.enqueue(value) }
+        _ = queue.dequeue()
+
+        #expect(queue.removeFirst(where: { $0 == 3 }) == 3)
+        #expect(queue.removeFirst(where: { $0 == 99 }) == nil)
+        #expect((0..<3).map { _ in queue.dequeue() } == [1, 2, 4])
+        #expect(queue.isEmpty)
+    }
+
+    @Test
+    func removeFirstWhereOnTheLastElementEmptiesTheQueue() {
+        var queue = FIFOQueue<Int>()
+        queue.enqueue(7)
+
+        #expect(queue.removeFirst(where: { $0 == 7 }) == 7)
+        #expect(queue.isEmpty)
+        queue.enqueue(8)
+        #expect(queue.dequeue() == 8)
+    }
 }

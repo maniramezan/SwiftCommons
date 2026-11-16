@@ -132,4 +132,76 @@ struct AsyncLockTests {
 
         #expect(await log.order == Array(0..<waiterCount))
     }
+
+    @Test
+    func cancelledCancellableWaiterLeavesTheQueueWithoutAcquiring() async {
+        let lock = AsyncLock()
+        await lock.lock()
+        let waiter = Task { try await lock.lockCancellable() }
+        while await lock.waiterCount < 1 { await Task.yield() }
+
+        waiter.cancel()
+
+        await #expect(throws: CancellationError.self) { try await waiter.value }
+        #expect(await lock.waiterCount == 0)
+        await lock.unlock()
+        // The cancelled waiter never held the lock, so it is free again.
+        #expect((try? await lock.lockCancellable()) != nil)
+        await lock.unlock()
+    }
+
+    @Test
+    func alreadyCancelledTaskThrowsWithoutAcquiring() async {
+        let lock = AsyncLock()
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            try await lock.lockCancellable()
+        }
+
+        await #expect(throws: CancellationError.self) { try await task.value }
+        // A free lock is still free.
+        await lock.lock()
+        await lock.unlock()
+    }
+
+    @Test
+    func cancellingAMiddleWaiterKeepsTheRemainingOrder() async {
+        let lock = AsyncLock()
+        let log = AcquisitionLog()
+        await lock.lock()
+
+        var tasks: [Task<Void, any Error>] = []
+        for index in 0..<3 {
+            tasks.append(
+                Task {
+                    try await lock.lockCancellable()
+                    await log.record(index)
+                    await lock.unlock()
+                })
+            while await lock.waiterCount <= index { await Task.yield() }
+        }
+
+        tasks[1].cancel()
+        while await lock.waiterCount > 2 { await Task.yield() }
+        await lock.unlock()
+        _ = await tasks[0].result
+        _ = await tasks[2].result
+
+        #expect(await log.order == [0, 2])
+    }
+
+    @Test
+    func withLockCancellableRunsTheBodyAndReleases() async throws {
+        let lock = AsyncLock()
+        let counter = Counter()
+
+        let value = try await lock.withLockCancellable {
+            counter.increment()
+            return counter.value
+        }
+
+        #expect(value == 1)
+        await lock.lock()
+        await lock.unlock()
+    }
 }
