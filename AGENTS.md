@@ -69,6 +69,7 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   excludes from the coverage gate because they need a microphone, TCC prompts, or model downloads.
   Everything else (mapping, metering, tap processing, voice ranking, event routing, alignment)
   must stay unit-tested.
+  `AudioLevelMeter` computes RMS with Accelerate's `vDSP_rmsqv`.
 - `Tests/SwiftCommonsTests`: Swift Testing coverage mirroring the `Sources` structure (covers
   `SwiftCommons`, `SwiftCommonsTestSupport`, and `SwiftCommonsSpeech` under `Speech/`). Keep a
   single test target: the CI coverage gate reads one test bundle.

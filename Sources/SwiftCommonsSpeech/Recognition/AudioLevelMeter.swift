@@ -1,4 +1,5 @@
 import AVFAudio
+import Accelerate
 import Foundation
 
 /// Converts microphone samples into a `0...1` loudness level suitable for a level meter.
@@ -9,12 +10,9 @@ enum AudioLevelMeter {
     /// The normalized RMS level of `samples`: `0` at or below ``floorDecibels``, `1` at full
     /// scale.
     static func level(of samples: UnsafeBufferPointer<Float>) -> Double {
-        guard !samples.isEmpty else { return 0 }
-        var sumOfSquares: Float = 0
-        for sample in samples {
-            sumOfSquares += sample * sample
-        }
-        let rms = (sumOfSquares / Float(samples.count)).squareRoot()
+        guard let base = samples.baseAddress, !samples.isEmpty else { return 0 }
+        var rms: Float = 0
+        vDSP_rmsqv(base, 1, &rms, vDSP_Length(samples.count))
         guard rms > 0 else { return 0 }
         let decibels = 20 * log10(rms)
         let normalized = (decibels - floorDecibels) / -floorDecibels
