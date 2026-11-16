@@ -11,6 +11,15 @@ struct DebouncerTests {
         func record(_ value: Int) {
             values.append(value)
         }
+
+        /// Yields until `count` values were recorded, giving up after a bounded number of turns.
+        func waitForCount(_ count: Int) async {
+            var iterations = 0
+            while values.count < count, iterations < 1_000 {
+                await Task.yield()
+                iterations += 1
+            }
+        }
     }
 
     @Test
@@ -48,14 +57,14 @@ struct DebouncerTests {
             await Task.yield()
         }
         await clock.advance(by: .milliseconds(20))
-        await Task.yield()
+        await recorder.waitForCount(1)
 
         await debouncer.run { await recorder.record(2) }
         while await clock.waiterCount == 0 {
             await Task.yield()
         }
         await clock.advance(by: .milliseconds(20))
-        await Task.yield()
+        await recorder.waitForCount(2)
 
         #expect(await recorder.values == [1, 2])
     }
@@ -92,6 +101,78 @@ struct DebouncerTests {
         await Task.yield()
 
         #expect(debouncer == nil)
+        #expect(await recorder.values == [])
+    }
+
+    @Test
+    func flushRunsThePendingActionImmediatelyAndOnlyOnce() async throws {
+        let clock = ManualClock()
+        let debouncer = Debouncer(delay: .seconds(10), clock: clock)
+        let recorder = Recorder()
+
+        await debouncer.run { await recorder.record(1) }
+        try #require(await clock.waitForSleepCount(1))
+
+        #expect(await debouncer.flush())
+        #expect(await recorder.values == [1])
+
+        // The cancelled timer must not run the action a second time.
+        await clock.advance(by: .seconds(10))
+        for _ in 0..<50 { await Task.yield() }
+        #expect(await recorder.values == [1])
+    }
+
+    @Test
+    func flushRunsOnlyTheLatestScheduledAction() async throws {
+        let clock = ManualClock()
+        let debouncer = Debouncer(delay: .seconds(10), clock: clock)
+        let recorder = Recorder()
+
+        await debouncer.run { await recorder.record(1) }
+        try #require(await clock.waitForSleepCount(1))
+        await debouncer.run { await recorder.record(2) }
+
+        #expect(await debouncer.flush())
+        #expect(await recorder.values == [2])
+    }
+
+    @Test
+    func flushWithNothingPendingDoesNothing() async {
+        let debouncer = Debouncer(delay: .seconds(10), clock: ManualClock())
+
+        #expect(await debouncer.flush() == false)
+    }
+
+    @Test
+    func flushAfterTheActionAlreadyRanDoesNothing() async throws {
+        let clock = ManualClock()
+        let debouncer = Debouncer(delay: .milliseconds(20), clock: clock)
+        let recorder = Recorder()
+
+        await debouncer.run { await recorder.record(1) }
+        try #require(await clock.waitForSleepCount(1))
+        await clock.advance(by: .milliseconds(20))
+        var iterations = 0
+        while await recorder.values != [1], iterations < 1_000 {
+            await Task.yield()
+            iterations += 1
+        }
+
+        #expect(await debouncer.flush() == false)
+        #expect(await recorder.values == [1])
+    }
+
+    @Test
+    func flushAfterCancelDoesNothing() async throws {
+        let clock = ManualClock()
+        let debouncer = Debouncer(delay: .seconds(10), clock: clock)
+        let recorder = Recorder()
+
+        await debouncer.run { await recorder.record(1) }
+        try #require(await clock.waitForSleepCount(1))
+        await debouncer.cancel()
+
+        #expect(await debouncer.flush() == false)
         #expect(await recorder.values == [])
     }
 }

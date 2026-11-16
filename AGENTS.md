@@ -145,7 +145,11 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   `yield(_:)`, `finish()`, optional latest-value replay). A final class guarded by
   a `Mutex`: streams register synchronously in `makeStream()` and unregister
   synchronously on termination, so an immediately cancelled consumer can't leak.
-- `Debouncer` (actor) coalesces rapid repeated calls into one action after a quiet period.
+- `Debouncer` (actor) coalesces rapid repeated calls into one action after a quiet period;
+  `flush()` runs the pending action now (at most once) and `cancel()` drops it. Its timer task holds
+  `self` weakly so a dropped debouncer still deinitializes.
+- `Throttler` (actor) runs the first call immediately, then coalesces calls inside `interval` into one
+  trailing run (or drops them with `runsTrailingCall: false`); both use an injectable `DelayClock`.
 - `withRetry(attempts:delay:clock:operation:)` retries a throwing async operation with a fixed delay.
 - `withTimeout(_:clock:operation:)` races work against a delay, cancels the loser, and waits for
   cleanup. Cancellation is cooperative, so the duration is not a hard deadline. `TimeoutError`

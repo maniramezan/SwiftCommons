@@ -101,7 +101,7 @@ include `.defaults`:
   `ConfigValue(string:valueType:)` for decoding a textual value whose type is known separately.
 - **Async fan-out** — `AsyncBroadcaster`, one source broadcast to many `AsyncStream`s, with
   optional replay of the latest value.
-- **Concurrency** — `AsyncLock` (FIFO mutex), `AsyncSemaphore` (counting semaphore), `Debouncer`,
+- **Concurrency** — `AsyncLock` (FIFO mutex), `AsyncSemaphore` (counting semaphore), `Debouncer`, `Throttler`,
   and `withRetry(...)` — all built on the injectable `DelayClock` abstraction so consumers
   can substitute a fake clock in tests.
 - **Retry backoff** — `RetryBackoff` (`.constant`, `.exponential` with cap and jitter) and a
@@ -245,6 +245,11 @@ let debouncer = Debouncer(delay: .milliseconds(300))
 func searchFieldDidChange(_ query: String) async {
     await debouncer.run { await performSearch(query) }
 }
+await debouncer.flush() // run the pending search now, e.g. when the screen closes
+
+// At most one run per second; the first call is immediate, the latest in-between call runs last
+let throttler = Throttler(interval: .seconds(1))
+await throttler.run { await saveDraft(text) }
 
 let lock = AsyncLock() // serialize work that spans awaits
 let result = try await lock.withLock { try await refreshToken() }
