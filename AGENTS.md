@@ -27,7 +27,7 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
 ## Package Traits
 
 - `SwiftData` (**default**): gates every file that imports SwiftData — `Persistence/ModelContainer+Extensions.swift`,
-  `Sync/SyncEngine.swift`, `Sync/SyncMetadata.swift`, `Sync/SyncResourceAdapter.swift`, and in
+  `Sync/SwiftDataSyncStore.swift`, `Sync/SyncMetadata.swift`, and in
   `SwiftCommonsTestSupport` `ModelContextFixtures.swift` plus `makeInMemorySyncContainer(for:)`.
   Wrap new SwiftData-dependent code (and its tests) in `#if SwiftData`, and gate as little as
   possible: types that compile without SwiftData stay available with `traits: []`.
@@ -52,8 +52,10 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   - `Concurrency`: `AsyncLock`, `AsyncSemaphore`, `AsyncBroadcaster`, `SingleFlight`, `Debouncer`, `withRetry(...)`, and the injectable `DelayClock` abstraction
   - `CSV`: lightweight CSV parsing/serialization helpers (behind the `CSV` package trait)
   - `Persistence`: `ModelContainer.make(for:inMemory:)` SwiftData bootstrap helper (behind the `SwiftData` trait)
-  - `Sync`: generic SwiftData sync engine (`SyncEngine`, `SyncResourceAdapter`, `SyncMetadata` are behind the
-    `SwiftData` trait; `SyncableModel`, `SyncState`, `SyncEvent`, and the DTOs are always available)
+  - `Sync`: store-independent sync engine. `SyncEngine`, `SyncResourceAdapter`, `SyncStore`,
+    `SyncCheckpoint`, `SyncableModel`, `SyncState`, `SyncEvent`, and the DTOs are always available;
+    `SwiftDataSyncStore`, `SwiftDataBackgroundSyncStore`, `SyncMetadata`, and the SwiftData
+    conveniences are behind the `SwiftData` trait
   - `Errors`: `AnySendableError`, a value snapshot of any `Error`
 - `Sources/SwiftCommonsTestSupport`: a separate library product with test-only helpers for consumers
   of `SwiftCommons` (fake clock, `LoadingState` assertions, in-memory SwiftData context helper, and
@@ -185,7 +187,10 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   for the common single-store, persistent-vs-in-memory case (apps, previews, and tests). An
   array-taking overload (`make(for: [any PersistentModel.Type], inMemory:)`) exists for callers that
   only know the model types dynamically.
-- `SyncEngine` (`@MainActor`) drives offline sync for SwiftData `@Model` rows conforming to `SyncableModel`; each resource plugs in via a `SyncResourceAdapter` (struct of closures) and the engine owns the contract (ack guard, pending guard, full-snapshot reconciliation, pagination drain, full-resync recovery).
+- `SyncEngine<Store: SyncStore>` (`Sendable`, not actor-bound) drives offline sync for rows conforming to `SyncableModel`; each resource plugs in via a `SyncResourceAdapter<Model, Upsert, Delete, Change, Context>` (struct of `@Sendable` closures) and the engine owns the contract (ack guard, pending guard, full-snapshot reconciliation, pagination drain, full-resync recovery).
+- `SyncStore` is the persistence seam: `transaction(_:)` runs a synchronous `@Sendable (Context) throws -> T` body atomically in the store's own isolation, and the `SyncCheckpoint` is read and written only through that `Context`, so a page's rows and cursor commit together. Models never leave a transaction; only `Sendable` DTOs, sent versions, and keys cross the network `await`s. The ack guard re-fetches pending rows inside the ack transaction and compares `localUpdatedAt` to the pushed value. Engine-made row changes (acks, tombstones) go through the adapter's `persist` closure (a no-op for SwiftData's live objects).
+- SwiftData layer: `SwiftDataSyncStore` (main actor, `mainContext`, no rollback since the context is shared with the app) and `SwiftDataBackgroundSyncStore` (`@ModelActor`, private context, rolls back on throw), both storing checkpoints in `SyncMetadata`. `SwiftDataSyncEngine` / `SwiftDataSyncAdapter<M, U, D, C>` typealiases, `SyncEngine(modelContainer:)`, and a `persist`-less adapter init keep SwiftData call sites short.
+- `SyncableModel` refines `SendableMetatype` (no `AnyObject`), so struct rows work and conformances can't be actor-isolated; MainActor-default modules need no annotation on `@Model` conformers. `Tests/SwiftCommonsTests/Sync/SQLiteSyncStoreTests.swift` is a test-only SQLite store with struct rows that covers the engine with no traits.
 - `SyncAppliedDTO.status` and `SyncResponseDTO.mode` stay raw strings for wire compatibility; use
   `statusKind` (`SyncAppliedDTO.Status`) and `modeKind` (`SyncResponseMode`) to branch on them. Both
   decode every string, keeping unrecognized ones as `.unknown(String)`, so a server adding an outcome

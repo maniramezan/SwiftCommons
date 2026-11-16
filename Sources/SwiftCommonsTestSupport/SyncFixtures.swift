@@ -4,13 +4,14 @@ import SwiftCommons
 #if SwiftData
 import SwiftData
 
-/// Creates an in-memory `ModelContainer` for testing a `SyncEngine`.
+/// Creates an in-memory `ModelContainer` for testing a `SyncEngine` over a SwiftData store.
 ///
 /// `SyncMetadata` is added to `types` automatically, since the engine
 /// stores each resource's cursor there and fails at runtime if the schema lacks it:
 ///
 ///     let container = try makeInMemorySyncContainer(for: Item.self)
 ///     let engine = SyncEngine(modelContainer: container)
+///     let background = SyncEngine(store: SwiftDataBackgroundSyncStore(modelContainer: container))
 ///
 /// - Parameter types: The app's synced `PersistentModel` types.
 /// - Returns: A fresh, isolated in-memory container.

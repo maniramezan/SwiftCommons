@@ -83,10 +83,11 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   durations, and ``FormatterCache``, the thread-local cache behind the date, number, relative-time,
   and measurement formatter helpers; use it to cache any other `Formatter`.
 - **Sync** — a generic ``SyncEngine`` that drives offline, cross-device sync
-  for SwiftData-backed resources through one contract-owning loop; resources
-  plug in as ``SyncResourceAdapter`` values. ``SyncEngine``, ``SyncResourceAdapter``, and
-  ``SyncMetadata`` are behind the default `SwiftData` trait; the DTOs,
-  ``SyncableModel``, ``SyncState``, and ``SyncEvent`` are always available.
+  through one contract-owning loop over any ``SyncStore``; resources plug in as
+  ``SyncResourceAdapter`` values. The engine, adapter, ``SyncStore``, DTOs,
+  ``SyncableModel``, ``SyncState``, and ``SyncEvent`` are always available; the SwiftData
+  stores (``SwiftDataSyncStore``, ``SwiftDataBackgroundSyncStore``) and ``SyncMetadata`` are
+  behind the default `SwiftData` trait.
 
 A separate `SwiftCommonsTestSupport` product ships test-only helpers (a fake
 clock, `LoadingState` assertions, an in-memory SwiftData context helper,
@@ -100,6 +101,7 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 ### Guides
 
 - <doc:SyncingSwiftDataResources>
+- <doc:SyncingCustomStores>
 
 ### Parsing
 
@@ -162,6 +164,12 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 - ``SyncEngine``
 - ``SyncResourceAdapter``
 - ``AnySyncResource``
+- ``SyncStore``
+- ``SyncCheckpoint``
+- ``SwiftDataSyncStore``
+- ``SwiftDataBackgroundSyncStore``
+- ``SwiftDataSyncEngine``
+- ``SwiftDataSyncAdapter``
 - ``SyncableModel``
 - ``SyncState``
 - ``SyncMetadata``
