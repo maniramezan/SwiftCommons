@@ -223,7 +223,15 @@ Record with Instruments' **os_signpost** instrument, or
 
 ```swift
 var state: LoadingState<[Item]> = await .load { try await api.fetchItems() }
+let titles = state.map { $0.map(\.title) }  // LoadingState<[String]>
 if let items = state.value { /* ... */ }
+
+// Keep the previous items on screen while reloading, or after a failed reload
+var screen = RefreshableLoadingState<[Item]>()
+screen.beginLoading()
+screen.finish(with: await .load { try await api.fetchItems() })
+screen.displayValue   // last loaded items, if any
+screen.isRefreshing   // true only while reloading with something to show
 if let error = state.error { showError(error.message, retryable: error.isRetryable) }
 
 let config = ConfigValue.environment()
@@ -274,8 +282,9 @@ dates outside the requested month. Use `arithmetic.month(containing:)` to identi
 `withTimeout` waits for both child tasks to finish cleanup. An operation that ignores cancellation
 can keep it suspended beyond the timeout. Parent cancellation throws `CancellationError`.
 
-`LoadingError(from:)` recognizes errors conforming to `LoadingErrorClassifiable`, native offline
-and timeout URL errors, and `TimeoutError`. Other errors retain the generic safe message. For
+`LoadingError(from:)` recognizes errors conforming to `LoadingErrorClassifiable`, URL errors for an
+unreachable network (not connected, connection lost, data not allowed, roaming off, host or DNS
+failures) and timeouts, and `TimeoutError`. Other errors retain the generic safe message. For
 localized presentation, map `LoadingError.kind` to app-owned strings; explicit messages remain
 available through `LoadingError(message:isRetryable:requiresSignIn:kind:)`.
 

@@ -29,6 +29,13 @@ struct LoadingErrorClassificationTests {
 
     @Test(arguments: [
         (URLError.Code.notConnectedToInternet, LoadingErrorKind.offline),
+        (.networkConnectionLost, .offline),
+        (.dataNotAllowed, .offline),
+        (.internationalRoamingOff, .offline),
+        (.callIsActive, .offline),
+        (.cannotFindHost, .offline),
+        (.cannotConnectToHost, .offline),
+        (.dnsLookupFailed, .offline),
         (.timedOut, .timedOut),
         (.badServerResponse, .other),
     ])

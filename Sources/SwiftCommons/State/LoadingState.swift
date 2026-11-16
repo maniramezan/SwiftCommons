@@ -32,6 +32,25 @@ public enum LoadingState<Value: Equatable & Sendable>: Equatable, Sendable {
     /// The failure, or `nil` in any other state.
     public var error: LoadingError? { if case .failed(let error) = self { error } else { nil } }
 
+    /// Transforms the loaded value, leaving every other state unchanged.
+    ///
+    ///     let titles: LoadingState<[String]> = state.map { $0.map(\.title) }
+    ///
+    /// - Parameter transform: Converts the loaded value.
+    /// - Returns: ``loaded(_:)`` with the transformed value, or the same ``idle``,
+    ///   ``loading``, or ``failed(_:)`` state.
+    /// - Throws: Whatever `transform` throws.
+    public func map<NewValue: Equatable & Sendable>(
+        _ transform: (Value) throws -> NewValue
+    ) rethrows -> LoadingState<NewValue> {
+        switch self {
+        case .idle: .idle
+        case .loading: .loading
+        case .loaded(let value): .loaded(try transform(value))
+        case .failed(let error): .failed(error)
+        }
+    }
+
     /// Runs a throwing async operation and maps its outcome to ``loaded(_:)``
     /// or ``failed(_:)``.
     ///
@@ -108,8 +127,11 @@ public struct LoadingError: Error, Equatable, Sendable {
     ///
     /// Internal error details (e.g. "Unauthorized access", stack traces) are
     /// never exposed to users. ``LoadingErrorClassifiable`` supplies the category
-    /// when implemented; otherwise `URLError.notConnectedToInternet` and
-    /// `URLError.timedOut` are recognized, and other failures use `.other`.
+    /// when implemented; otherwise `URLError` codes that mean the network is unreachable
+    /// (`notConnectedToInternet`, `networkConnectionLost`, `dataNotAllowed`,
+    /// `internationalRoamingOff`, `callIsActive`, `cannotFindHost`, `cannotConnectToHost`,
+    /// `dnsLookupFailed`) map to `.offline`, `timedOut` maps to `.timedOut`, and other
+    /// failures use `.other`.
     /// Callers can map ``kind`` to localized copy or pass their own message to
     /// ``init(message:isRetryable:requiresSignIn:kind:)``.
     public init(from error: Error) {
@@ -118,7 +140,10 @@ public struct LoadingError: Error, Equatable, Sendable {
         } else if let urlError = error as? URLError {
             kind =
                 switch urlError.code {
-                case .notConnectedToInternet: .offline
+                case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed,
+                    .internationalRoamingOff, .callIsActive, .cannotFindHost,
+                    .cannotConnectToHost, .dnsLookupFailed:
+                    .offline
                 case .timedOut: .timedOut
                 default: .other
                 }

@@ -39,6 +39,8 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 | Calendar math | `calendar.startOfMonth(for:)`, `numberOfDays(in:year:)`, `dates(from:through:)`; era/leap-month-safe months via `CalendarArithmetic` + `MonthIdentifier` |
 | Month grid dates | `CalendarArithmetic(calendar: calendar).gridDates(in: month)` → `[Date]?`, padded to complete weeks using `firstWeekday` |
 | Screen loading state | `LoadingState<Value>` with `state = await .load { try await fetch() }` |
+| Keep old content visible while reloading | `RefreshableLoadingState<Value>`: `beginLoading()`, then `finish(with: await .load { … })`; read `displayValue` / `isRefreshing` |
+| Transform a loaded value | `state.map { … }` |
 | Safe loading failure categories | `LoadingError.kind` (`.offline`, `.timedOut`, `.other`); domain errors can conform to `LoadingErrorClassifiable` |
 | Serialize async work across awaits | `try await lock.withLock { … }` (`AsyncLock`) |
 | Deduplicate concurrent identical requests | `try await singleFlight.value(for: key) { … }` (`SingleFlight<Key, Value>`) |
@@ -89,8 +91,8 @@ project imports `SwiftCommons`, use the library API instead of reimplementing it
 - **`Debouncer.run` must be awaited.** From synchronous code, wrapping it in `Task { await … }`
   can reorder calls.
 - **`LoadingState.load` maps cancellation to `.idle`, not `.failed`.** `LoadingError(from:)`
-  uses safe offline/timeout messages for `LoadingErrorClassifiable`, native offline/timeout
-  URL errors, and `TimeoutError`; other failures use the generic message. Map `.kind` to
+  uses safe offline/timeout messages for `LoadingErrorClassifiable`, native offline-class
+  (not connected, connection lost, data not allowed, host/DNS failures) and timeout URL errors, and `TimeoutError`; other failures use the generic message. Map `.kind` to
   app-localized strings or construct `LoadingError(message:isRetryable:requiresSignIn:kind:)`.
 - **Timeout cancellation is cooperative.** `withTimeout` cancels the losing child and waits
   for cleanup. An operation that ignores cancellation can exceed the duration. Parent
