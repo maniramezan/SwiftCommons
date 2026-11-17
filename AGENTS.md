@@ -173,8 +173,8 @@ See `CONTRIBUTING.md` for formatting and documentation conventions, and
   and a `shouldRetry` predicate; the fixed-delay overload is built on `.constant`.
 - `DelayClock` is the injectable clock protocol behind `withRetry`, `withTimeout`, and `Debouncer`'s delays
   (default: `LiveClock`, backed by `Task.sleep(for:)`). These APIs default to the
-  real clock, so existing call sites are unaffected; tests can inject
-  `ManualClock` (in `SwiftCommonsTestSupport`) to avoid real-time waits.
+  real clock; tests can inject `ManualClock` (in `SwiftCommonsTestSupport`) to avoid
+  real-time waits.
 - `SingleFlight<Key, Value>` (actor) coalesces concurrent `value(for:operation:)` calls per key into
   one task; `cancel(_:)`/`cancelAll()` detach the flight, and a flight-ID check turns a cancelled
   flight's late result into `CancellationError`. Nothing is cached after a flight finishes.
