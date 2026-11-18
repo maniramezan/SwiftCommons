@@ -33,7 +33,8 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   and `String(flag:)`/`.enabledFlag`/`.disabledFlag` boolean-flag helpers,
   `String.ensuringStarts(with:)`, suffix trimming (`trimmingSuffix(while:)`,
   `trimmingSuffix(_:)` for a sequence or regex, and the mutating `trimSuffix` overloads),
-  `Character.isAlphanumeric`, `Bundle.appVersion`/`.buildNumber`/`.versionAndBuildNumber`, `UUID`
+  `Character.isAlphanumeric`, `StringProtocol.firstStrongCharacterDirection` (Unicode bidi
+  first-strong-letter reading direction), `Bundle.appVersion`/`.buildNumber`/`.versionAndBuildNumber`, `UUID`
   byte and deterministic-generation helpers, and `Duration.timeInterval`.
 - **Decoding diagnostics** — `DecodingError.debugSummary` renders the failure kind, key or type, and
   coding path (`keyNotFound 'id' at items[2].user`) without decoded values, for safe logging.
