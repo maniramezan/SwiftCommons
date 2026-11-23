@@ -72,7 +72,8 @@ let id = Locale.identifier(language: .french, country: .canada) // "fr-CA"
   ``withRetry(attempts:backoff:clock:shouldRetry:operation:)`` with a ``RetryBackoff`` and a
   retry predicate), all built on the injectable ``DelayClock`` abstraction.
 - **Timeouts** — ``withTimeout(_:clock:operation:)`` races an operation against a clock delay,
-  throwing ``TimeoutError`` on expiration and awaiting cancellation cleanup of the losing task.
+  throwing ``TimeoutError`` on expiration and awaiting cancellation cleanup of the losing task. ``withAbandoningTimeout(_:clock:operation:)`` returns at the deadline without waiting, for
+  operations that ignore cancellation.
 - **App versions** — ``AppVersion`` parses and compares numeric marketing versions, defaulting
   omitted components to zero and ignoring prerelease and build suffixes.
 - **CSV** — lightweight CSV parsing/serialization (``CSV``) with custom delimiters
@@ -136,6 +137,7 @@ Foundation, Swift standard library, and OSLog extensions are listed under
 - ``withRetry(attempts:backoff:clock:shouldRetry:operation:)``
 - ``RetryBackoff``
 - ``withTimeout(_:clock:operation:)``
+- ``withAbandoningTimeout(_:clock:operation:)``
 - ``TimeoutError``
 - ``DelayClock``
 - ``LiveClock``

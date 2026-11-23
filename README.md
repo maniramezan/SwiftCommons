@@ -110,7 +110,8 @@ include `.defaults`:
   `shouldRetry` predicate for `withRetry(attempts:backoff:clock:shouldRetry:operation:)`.
 - **Timeouts** — `withTimeout(_:clock:operation:)` races async work against an injectable clock,
   cancels the losing task, and throws `TimeoutError` when time expires. Operations must cooperate
-  with cancellation for prompt completion.
+  with cancellation for prompt completion. `withAbandoningTimeout` returns at the deadline even when the operation ignores
+  cancellation, discarding its late result.
 - **CSV** — lightweight CSV parsing/serialization with custom delimiters and header-keyed records
   (behind the `CSV` package trait).
 - **Call coalescing** — `SingleFlight<Key, Value>`, which shares one in-flight async call among
@@ -291,6 +292,17 @@ dates outside the requested month. Use `arithmetic.month(containing:)` to identi
 
 `withTimeout` waits for both child tasks to finish cleanup. An operation that ignores cancellation
 can keep it suspended beyond the timeout. Parent cancellation throws `CancellationError`.
+
+For operations that ignore cancellation (a callback-based SDK bridged with a continuation, for
+example), `withAbandoningTimeout` returns as soon as the delay expires: it cancels the operation,
+discards whatever it later returns, and never waits for it. Use it only when a late completion is
+harmless or observed elsewhere.
+
+```swift
+let token = try await withAbandoningTimeout(.seconds(20)) {
+    try await sdk.fetchToken()
+}
+```
 
 `LoadingError(from:)` recognizes errors conforming to `LoadingErrorClassifiable`, URL errors for an
 unreachable network (not connected, connection lost, data not allowed, roaming off, host or DNS
